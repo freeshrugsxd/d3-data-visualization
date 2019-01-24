@@ -1,5 +1,5 @@
 let pie_area = (function(){
-    d3.json('pie_data.json', init)
+    d3.json('pie-chart/pie_data.json', init)
 
     let config = {
          ref_width : 350,
