@@ -1,7 +1,7 @@
 let pie_area = (function(){
     d3.json('pie-chart/pie_data.json', init)
 
-    let config = {
+    let template = {
          ref_width : 350,
         ref_height : 350,
          min_width : 200,
@@ -14,15 +14,21 @@ let pie_area = (function(){
                          left : 40 },
               data : [],
     }
+    let config = {}
+    config.left = template
+    config.right = Object.assign({}, config.left)
+    config.right.div_id = '#rightDiv'
+    config.right.chart_id = '#rightChart'
+
 
     function init(json) {
-        config.data = json.data;
+        config.left.data = json.data;
         redraw();
     }
 
     function redraw() {
-        console.log('config', config)
-        pie_chart = draw_pie(config);
+        left_chart = draw_left(config);
+        right_chart = draw_right(config);
     }
 
     return {
@@ -35,4 +41,3 @@ let resize_windows = function(){
     window.dispatchEvent(new Event('resize'));
 }
 window.addEventListener('resize', pie_area.render);
-
