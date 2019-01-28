@@ -1,7 +1,7 @@
 function draw_pie(configs, side) {
 
-    config = side == 'l' ? configs.left : configs.right
-    let divId   = config.div_id,
+    let config  = side == 'l' ? configs.left : configs.right
+        divId   = config.div_id,
         chartId = config.chart_id,
         margin  = config.margin,
         objArr  = [],
