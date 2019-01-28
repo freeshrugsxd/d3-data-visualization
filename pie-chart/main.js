@@ -27,8 +27,8 @@ let pie_area = (function(){
     }
 
     function redraw() {
-        left_chart = draw_left(config);
-        right_chart = draw_right(config);
+        left_chart = draw_pie(config, 'l');
+        right_chart = draw_pie(config, 'r');
     }
 
     return {
