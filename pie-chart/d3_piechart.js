@@ -47,7 +47,7 @@ function draw_pie(configs, side) {
         .append('svg')
         .attr({id : chartId, width : w, height : h})
         .append('g')
-        .attr('transform', 'translate(' + cx + ',' + cy + ')');
+        .attr('transform', `translate(${cx} ,${cy})`);
 
     // append group for each datum in config.data
     let arcs = svg.selectAll('.arc')
@@ -72,7 +72,7 @@ function draw_pie(configs, side) {
                 .transition()
                 .ease('out')
                 .delay(100)
-                // .duration(250)
+                .duration(150)
                 .attr('d', arc);
         })
         .on('click', function() {
@@ -86,8 +86,8 @@ function draw_pie(configs, side) {
         });
 
     arcs.append('text')
-        .attr('transform', function(d) { return 'translate(' + arc.centroid(d) + ')'})
-        .text(function(d) { return `${d.data.key} (${d.value})`})
+        .attr('transform', function(d) { return `translate(${arc.centroid(d)})`})
+        .text(function(d) { return `${d.value}`})
         .attr('text-anchor', 'middle')
         .style('font-size', '14px');
 }

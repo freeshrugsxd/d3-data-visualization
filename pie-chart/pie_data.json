@@ -3,21 +3,21 @@
         {
             "key": "Mission A",
             "values": {
-                "L1": 25,
-                "L2": 13
+                "L1": 26,
+                "L2": 4
             }
         },
         {
             "key": "Mission B",
             "values": {
-                "L1": 14,
-                "L2": 7
+                "L1": 22,
+                "L2": 20
             }
         },
         {
             "key": "Mission C",
             "values": {
-                "L1": 12,
+                "L1": 17,
                 "L2": 32
             }
         }
