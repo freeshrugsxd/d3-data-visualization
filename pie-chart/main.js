@@ -21,7 +21,6 @@ let pie_area = (function(){
     jQuery.extend(configs.right, { div_id : '#rightDiv', chart_id : '#rightChart' });
 
     function init(json) {
-        // console.log(json)
         configs.left.data = json.data;
         redraw()
     }

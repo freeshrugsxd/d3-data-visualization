@@ -60,6 +60,7 @@ function draw_pie(configs, side) {
         .attr('d', arc)
         .attr('fill', function(d, i) { return color(i) })
         .style('stroke', 'white')
+        // transitions on mouseover and mouseout
         .on('mouseover', function(){
             d3.select(this)
                 .transition()
