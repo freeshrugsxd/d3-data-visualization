@@ -87,7 +87,7 @@ function draw_pie(configs, side) {
 
     arcs.append('text')
         .attr('transform', function(d) { return `translate(${arc.centroid(d)})`})
-        .text(function(d) { return `${d.value}`})
+        .text(function(d) { return `${d.data.key} (${d.value})`})
         .attr('text-anchor', 'middle')
         .style('font-size', '14px');
 }

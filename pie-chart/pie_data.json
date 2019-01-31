@@ -1,21 +1,21 @@
 {
     "data": [
         {
-            "key": "Mission A",
+            "key": "A",
             "values": {
                 "L1": 26,
                 "L2": 4
             }
         },
         {
-            "key": "Mission B",
+            "key": "B",
             "values": {
                 "L1": 22,
                 "L2": 20
             }
         },
         {
-            "key": "Mission C",
+            "key": "C",
             "values": {
                 "L1": 17,
                 "L2": 32
