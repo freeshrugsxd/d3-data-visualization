@@ -9,14 +9,6 @@ function draw_pie(configs, side) {
 
     $(divId).html('') // delete all content of div container
 
-    // write json objects into array
-    // console.log('config', config)
-    console.log('config.data', config.data)
-    // Object.keys(config.data).forEach(function(key) {
-    //     config.data.push(config.data[key])
-    //     keys.push(key)
-    // })
-
     let color = d3.scale.linear()
         .domain([0, config.data.length])
         .range(['#FF3112', '#1231FF']);
@@ -26,8 +18,7 @@ function draw_pie(configs, side) {
         h = 2 * outerRadius + margin.top + margin.bottom;
 
     let pie = d3.layout.pie()
-        .value(function(d){
-            return d3.sum(d3.values(d.values)) });
+        .value(function(d){ return d3.sum(d3.values(d.values)) });
 
     let arc = d3.svg.arc()
         .innerRadius(innerRadius)
@@ -47,7 +38,7 @@ function draw_pie(configs, side) {
         .append('svg')
         .attr({id : chartId, width : w, height : h})
         .append('g')
-        .attr('transform', `translate(${cx} ,${cy})`);
+        .attr('transform', `translate(${cx}, ${cy})`);
 
     // append group for each datum in config.data
     let arcs = svg.selectAll('.arc')
@@ -60,6 +51,7 @@ function draw_pie(configs, side) {
         .attr('d', arc)
         .attr('fill', function(d, i) { return color(i) })
         .style('stroke', 'white')
+        .style('stroke-width', '2px')
         // transitions on mouseover and mouseout
         .on('mouseover', function(){
             d3.select(this)
