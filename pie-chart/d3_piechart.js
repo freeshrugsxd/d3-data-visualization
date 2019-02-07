@@ -1,7 +1,6 @@
-function draw_pie(configs, side) {
+function draw_pie(config) {
 
-    let config  = side === 'l' ? configs.left : configs.right,
-        divId   = config.div_id,
+    let divId   = config.div_id,
         chartId = config.chart_id,
         margin  = config.margin,
         keys    = [],
@@ -70,12 +69,12 @@ function draw_pie(configs, side) {
         })
         .on('click', function() {
             let arcData = this.__data__.data
-            configs.right.data = []
+            config.data = []
             Object.keys(arcData.values).forEach( function(key) {
-                configs.right.data.push({   key: key,
-                                         values: [arcData.values[key]]})
+                config.data.push({ key: key,
+                                   values: [arcData.values[key]]})
             })
-            draw_pie(configs, 'r')
+            draw_pie(config)
         });
 
     arcs.append('text')
