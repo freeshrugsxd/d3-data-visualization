@@ -1,5 +1,6 @@
 let pie_area = (function(){
-    d3.json('pie-chart/pie_data.json', init)
+    // d3.json('pie-chart/pie_data.json', init)
+    d3.json('pie-chart/hystorical_sunchart.json', init)
 
     let config  = {
          ref_width : 350,
@@ -16,7 +17,8 @@ let pie_area = (function(){
     };
 
     function init(json) {
-        config.data = json.data;
+        // config.data = json.data;
+        config.data = json.n_prod;
         redraw()
     }
 

@@ -1,47 +1,46 @@
 function draw_pie(config) {
     console.log('config', config)
 
-    let divId   = config.div_id,
+    const divId = config.div_id,
         chartId = config.chart_id,
         margin  = config.margin,
-        keys    = [],
         w       = $(divId).width();
 
     $(divId).html('') // delete all content of div container
 
-    let color = d3.scale.linear()
+    const color = d3.scale.linear()
         .domain([0, config.data.length])
         .range(['#FF3112', '#1231FF']);
 
-    let outerRadius = (w - margin.left - margin.right) / 2,
+    const outerRadius = (w - margin.left - margin.right) / 2,
         innerRadius = 0,
         h = 2 * outerRadius + margin.top + margin.bottom;
 
-    let pie = d3.layout.pie()
+    const pie = d3.layout.pie()
         .value(function(d){ return d.value });
 
-    let arc = d3.svg.arc()
+    const arc = d3.svg.arc()
         .innerRadius(innerRadius)
         .outerRadius(outerRadius);
 
     // bigger outerRadius for mouseover transition
-    let arcMouseOver = d3.svg.arc()
+    const arcMouseOver = d3.svg.arc()
         .innerRadius(innerRadius)
         .outerRadius(outerRadius * 1.05);
 
     // x and y coords of the pie chart centre
-    let cx = outerRadius + margin.left,
-        cy = outerRadius + margin.top;
+    const cx = outerRadius + margin.left,
+          cy = outerRadius + margin.top;
 
     // create svg area
-    let svg = d3.selectAll(divId)
+    const svg = d3.selectAll(divId)
         .append('svg')
         .attr({id : chartId, width : w, height : h})
         .append('g')
         .attr('transform', `translate(${cx}, ${cy})`);
 
     // append group for each datum in config.data
-    let arcs = svg.selectAll('.arc')
+    const arcs = svg.selectAll('.arc')
         .data(pie(config.data))
         .enter()
         .append('g')
@@ -52,6 +51,7 @@ function draw_pie(config) {
         .attr('fill', function(d, i) { return color(i) })
         .style('stroke', 'white')
         .style('stroke-width', '2px')
+
         // transitions on mouseover and mouseout
         .on('mouseover', function(){
             d3.select(this)
@@ -60,6 +60,7 @@ function draw_pie(config) {
                 .ease('in')
                 .attr('d', arcMouseOver);
         })
+
         .on('mouseout', function() {
             d3.select(this)
                 .transition()
@@ -68,20 +69,20 @@ function draw_pie(config) {
                 .duration(150)
                 .attr('d', arc);
         })
-        .on('click', function() {
-            let arcData = this.__data__.data
 
-            console.log('arcData', arcData)
-            if (arcData.children !== undefined) {
-                console.log('this', this)
-                config.data = arcData.children;
+        .on('click', function() {
+            const _this = this,
+                children = _this.__data__.data.children;
+
+            if (children !== undefined) {
+                config.data = children;
                 draw_pie(config)
 
             } else {
-                console.log('the end')
-                console.log('this', this)
+                // console.log('the end')
+                // console.log('this', this)
                 // console.log('parentElement', this.parentElement)
-                config.data = this.parentElement.__data__.data.children
+                // config.data = this.parentElement.__data__.data.children
                 draw_pie(config)
 
             }
@@ -93,4 +94,10 @@ function draw_pie(config) {
         .text(function(d) { return `${d.data.label} (${d.value})`})
         .attr('text-anchor', 'middle')
         .style('font-size', '14px');
+
+    arcs.each(addDataToArc)
+
+    function addDataToArc(d, i){
+        console.log('d, i =', d, i)
+    }
 }
