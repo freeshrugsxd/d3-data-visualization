@@ -8,10 +8,10 @@ let pie_area = (function(){
         min_height : 200,
             div_id : '#chartDiv',
           chart_id : '#pieChart',
-            margin : {    top : 35,
-                        right : 35,
-                       bottom : 35,
-                         left : 35 },
+            margin : {    top : 100,
+                        right : 100,
+                       bottom : 100,
+                         left : 100 },
               data : [],
     };
 

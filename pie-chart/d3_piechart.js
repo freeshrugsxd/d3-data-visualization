@@ -1,4 +1,5 @@
 function draw_pie(config) {
+    console.log('config', config)
 
     let divId   = config.div_id,
         chartId = config.chart_id,
@@ -17,7 +18,7 @@ function draw_pie(config) {
         h = 2 * outerRadius + margin.top + margin.bottom;
 
     let pie = d3.layout.pie()
-        .value(function(d){ return d3.sum(d3.values(d.values)) });
+        .value(function(d){ return d.value });
 
     let arc = d3.svg.arc()
         .innerRadius(innerRadius)
@@ -69,17 +70,27 @@ function draw_pie(config) {
         })
         .on('click', function() {
             let arcData = this.__data__.data
-            config.data = []
-            Object.keys(arcData.values).forEach( function(key) {
-                config.data.push({ key: key,
-                                   values: [arcData.values[key]]})
-            })
-            draw_pie(config)
+
+            console.log('arcData', arcData)
+            if (arcData.children !== undefined) {
+                console.log('this', this)
+                config.data = arcData.children;
+                draw_pie(config)
+
+            } else {
+                console.log('the end')
+                console.log('this', this)
+                // console.log('parentElement', this.parentElement)
+                config.data = this.parentElement.__data__.data.children
+                draw_pie(config)
+
+            }
+
         });
 
     arcs.append('text')
         .attr('transform', function(d) { return `translate(${arc.centroid(d)})`})
-        .text(function(d) { return `${d.data.key} (${d.value})`})
+        .text(function(d) { return `${d.data.label} (${d.value})`})
         .attr('text-anchor', 'middle')
         .style('font-size', '14px');
 }

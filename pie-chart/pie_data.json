@@ -1,25 +1,327 @@
 {
-    "data": [
+  "data": [
+    {
+      "children": [
         {
-            "key": "A",
-            "values": {
-                "L1": 26,
-                "L2": 4
+          "children": [
+            {
+              "children": [
+                {
+                  "tooltip": "some text",
+                  "value": 23645,
+                  "label": "1.1.1.1.1"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 3659,
+                  "label": "1.1.1.1.2"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 56914,
+                  "label": "1.1.1.1.3"
+                }
+              ],
+              "tooltip": "some text",
+              "value": 1200,
+              "label": "1.1.1.1"
+            },
+            {
+              "children": [
+                {
+                  "tooltip": "some text",
+                  "value": 34658,
+                  "label": "1.1.1.2.1"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 584679,
+                  "label": "1.1.1.2.2"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 145836,
+                  "label": "1.1.1.2.3"
+                }
+              ],
+              "tooltip": "some text",
+              "value": 356,
+              "label": "1.1.1.2"
+            },
+            {
+              "children": [
+                {
+                  "tooltip": "some text",
+                  "value": 15834,
+                  "label": "1.1.1.3.1"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 6584,
+                  "label": "1.1.1.3.2"
+                }
+              ],
+              "tooltip": "some text",
+              "value": 463,
+              "label": "1.1.1.3"
             }
+          ],
+          "tooltip": "some text",
+          "value": 146,
+          "label": "1.1.1"
         },
         {
-            "key": "B",
-            "values": {
-                "L1": 22,
-                "L2": 20
+          "children": [
+            {
+              "tooltip": "some text",
+              "value": 245,
+              "label": "1.1.2.1"
+            },
+            {
+              "children": [
+                {
+                  "tooltip": "some text",
+                  "value": 458,
+                  "label": "1.1.2.2.1"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 262,
+                  "label": "1.1.2.2.2"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 100,
+                  "label": "1.1.2.2.3"
+                }
+              ],
+              "tooltip": "some text",
+              "value": 845,
+              "label": "1.1.2.2"
             }
+          ],
+          "tooltip": "some text",
+          "value": 486,
+          "label": "1.1.2"
         },
         {
-            "key": "C",
-            "values": {
-                "L1": 17,
-                "L2": 32
-            }
+          "tooltip": "some text",
+          "value": 13,
+          "label": "1.1.3"
+        },
+        {
+          "tooltip": "some text",
+          "value": 14,
+          "label": "1.1.4"
         }
-    ]
+      ],
+      "tooltip": "some text",
+      "value": 264,
+      "label": "1.1"
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "tooltip": "some text",
+                  "value": 58,
+                  "label": "1.2.1.1.1"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 235,
+                  "label": "1.2.1.1.2"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 98,
+                  "label": "1.2.1.1.3"
+                }
+              ],
+              "tooltip": "some text",
+              "value": 658,
+              "label": "1.2.1.1"
+            },
+            {
+              "children": [
+                {
+                  "tooltip": "some text",
+                  "value": 58,
+                  "label": "1.2.1.2.1"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 235,
+                  "label": "1.2.1.2.2"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 98,
+                  "label": "1.2.1.2.3"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 123,
+                  "label": "1.2.1.2.4"
+                }
+              ],
+              "tooltip": "some text",
+              "value": 658,
+              "label": "1.2.1.2"
+            }
+          ],
+          "tooltip": "some text",
+          "value": 1,
+          "label": "1.2.1"
+        }
+      ],
+      "tooltip": "some text",
+      "value": 375,
+      "label": "1.2"
+    },
+    {
+      "children": [
+        {
+          "tooltip": "some text",
+          "value": 125,
+          "label": "1.3.1"
+        },
+        {
+          "tooltip": "some text",
+          "value": 356,
+          "label": "1.3.2"
+        }
+      ],
+      "tooltip": "some text",
+      "value": 942,
+      "label": "1.3"
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "tooltip": "some text",
+                  "value": 253,
+                  "label": "1.4.1.1.1"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 75,
+                  "label": "1.4.1.1.2"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 375,
+                  "label": "1.4.1.1.3"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 957,
+                  "label": "1.4.1.1.4"
+                }
+              ],
+              "tooltip": "some text",
+              "value": 134,
+              "label": "1.4.1.1"
+            }
+          ],
+          "tooltip": "some text",
+          "value": 58,
+          "label": "1.4.1"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "tooltip": "some text",
+                  "value": 253,
+                  "label": "1.4.1.1.1"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 75,
+                  "label": "1.4.2.1.2"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 375,
+                  "label": "1.4.2.1.3"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 957,
+                  "label": "1.4.2.1.4"
+                }
+              ],
+              "tooltip": "some text",
+              "value": 134,
+              "label": "1.4.2.1"
+            }
+          ],
+          "tooltip": "some text",
+          "value": 58,
+          "label": "1.4.2"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "tooltip": "some text",
+                  "value": 253,
+                  "label": "1.4.3.1.1"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 75,
+                  "label": "1.4.3.1.2"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 375,
+                  "label": "1.4.3.1.3"
+                },
+                {
+                  "tooltip": "some text",
+                  "value": 957,
+                  "label": "1.4.3.1.4"
+                }
+              ],
+              "tooltip": "some text",
+              "value": 134,
+              "label": "1.4.3.1"
+            },
+            {
+              "tooltip": "some text",
+              "value": 345,
+              "label": "1.4.3.2"
+            },
+            {
+              "tooltip": "some text",
+              "value": 721,
+              "label": "1.4.3.3"
+            }
+          ],
+          "tooltip": "some text",
+          "value": 58,
+          "label": "1.4.3"
+        }
+      ],
+      "tooltip": "some text",
+      "value": 123,
+      "label": "1.4"
+    },
+    {
+      "tooltip": "some text",
+      "value": 921,
+      "label": "1.5"
+    }
+  ]
 }
