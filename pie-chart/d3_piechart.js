@@ -1,10 +1,14 @@
 function draw_pie(config) {
-    console.log('config', config)
 
     const divId = config.div_id,
         chartId = config.chart_id,
         margin  = config.margin,
         w       = $(divId).width();
+
+    // save first level data as new attribute
+    if (config.currentLevel === 0 && config.og === undefined) {
+        config.og = config.data
+    }
 
     $(divId).html('') // delete all content of div container
 
@@ -13,11 +17,12 @@ function draw_pie(config) {
         .range(['#FF3112', '#1231FF']);
 
     const outerRadius = (w - margin.left - margin.right) / 2,
-        innerRadius = 0,
+        innerRadius   = 0,
         h = 2 * outerRadius + margin.top + margin.bottom;
 
     const pie = d3.layout.pie()
-        .value(function(d){ return d.value });
+        .sort(null)
+        .value(d => d.value);
 
     const arc = d3.svg.arc()
         .innerRadius(innerRadius)
@@ -26,7 +31,7 @@ function draw_pie(config) {
     // bigger outerRadius for mouseover transition
     const arcMouseOver = d3.svg.arc()
         .innerRadius(innerRadius)
-        .outerRadius(outerRadius * 1.05);
+        .outerRadius(outerRadius * 1.02);
 
     // x and y coords of the pie chart centre
     const cx = outerRadius + margin.left,
@@ -46,58 +51,114 @@ function draw_pie(config) {
         .append('g')
         .attr('class', 'arc');
 
+    // generate the pie slices
     arcs.append('path')
         .attr('d', arc)
-        .attr('fill', function(d, i) { return color(i) })
+        .attr('fill', (d, i) => color(i))
         .style('stroke', 'white')
         .style('stroke-width', '2px')
-
-        // transitions on mouseover and mouseout
         .on('mouseover', function(){
             d3.select(this)
                 .transition()
-                .duration(125)
-                .ease('in')
-                .attr('d', arcMouseOver);
+                    .duration(125)
+                    .ease('in')
+                    .attr('d', arcMouseOver);
         })
-
         .on('mouseout', function() {
             d3.select(this)
                 .transition()
-                .ease('out')
-                .delay(100)
-                .duration(150)
-                .attr('d', arc);
+                    .ease('out')
+                    .delay(100)
+                    .duration(150)
+                    .attr('d', arc);
         })
-
         .on('click', function() {
-            const _this = this,
-                children = _this.__data__.data.children;
-
+            // check if current node has child nodes. If it does, assign
+            // children as new data. If not, signal dead end and do not redraw.
+            const children = this.__data__.data[config.inner];
             if (children !== undefined) {
                 config.data = children;
+                config.currentLevel++
+                config.history.push(children)
+                config.goingUp = false
                 draw_pie(config)
-
             } else {
-                // console.log('the end')
-                // console.log('this', this)
-                // console.log('parentElement', this.parentElement)
-                // config.data = this.parentElement.__data__.data.children
-                draw_pie(config)
-
+                // transition to signal a dead end
+                d3.select(this)
+                    .transition()
+                        .ease('bounce')
+                        .attr('d', arc)
+                    .transition()
+                        .ease('out')
+                        .duration(150)
+                        .attr('d', arcMouseOver)
             }
-
         });
 
+    // create the labels at the center of the pie slices
     arcs.append('text')
-        .attr('transform', function(d) { return `translate(${arc.centroid(d)})`})
-        .text(function(d) { return `${d.data.label} (${d.value})`})
+        .attr('transform', d => `translate(${arc.centroid(d)})`)
+        .text(d => `${d.data.label} (${d.value})`)
         .attr('text-anchor', 'middle')
         .style('font-size', '14px');
 
-    arcs.each(addDataToArc)
+    // create circle to be used as a button to go one level up
+    const upBtn = svg.append('g')
+        .attr('class', 'upButton');
 
-    function addDataToArc(d, i){
-        console.log('d, i =', d, i)
-    }
+    // depending on two control variables, we determine the initial radius
+    const rad = 25,
+        rInit = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
+
+    const circ = upBtn.append('circle')
+        .attr('r', rInit)
+        .attr('transform',
+              `translate(${outerRadius}, ${- outerRadius})`)
+        .attr('fill', 'green')
+        .on('mouseover', function() {
+            // disable mouseover transitions on root level because
+            // it otherwise interferes with other transitions
+            if (config.currentLevel > 0)
+                d3.select(this)
+                    .transition()
+                        .duration(125)
+                        .ease('in')
+                        .attr('r', rad * 1.1)
+        })
+        .on('mouseout', function() {
+            if (config.currentLevel > 0)
+                d3.select(this)
+                    .transition()
+                        .ease('out')
+                        .delay(100)
+                        .duration(150)
+                        .attr('r', rad)
+        })
+        .on('click', function() {
+            if (config.history[config.currentLevel - 2] !== undefined) {
+                config.data = config.history[--config.currentLevel - 1]
+                config.history.pop()
+                config.goingUp = true
+                draw_pie(config)
+            }
+            else if (config.currentLevel == 1) {
+                config.data = config.og
+                config.currentLevel--
+                config.history.pop()
+                config.goingUp = true
+                draw_pie(config)
+            }
+        });
+
+        if (config.currentLevel == 1) {
+            circ.transition()
+                .ease('bounce')
+                .duration(500)
+                .attr('r', rad)
+
+        } else if (config.currentLevel == 0){
+            circ.transition()
+                .ease('in')
+                .attr('r', 0)
+        }
 }

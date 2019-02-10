@@ -7,6 +7,13 @@
             {
               "children": [
                 {
+                  "children": [
+                    {
+                      "tooltip": "some text",
+                      "value": 42,
+                      "label": "1.1.1.1.1.1"
+                    }
+                  ],
                   "tooltip": "some text",
                   "value": 23645,
                   "label": "1.1.1.1.1"
@@ -242,7 +249,7 @@
                 {
                   "tooltip": "some text",
                   "value": 253,
-                  "label": "1.4.1.1.1"
+                  "label": "1.4.2.1.1"
                 },
                 {
                   "tooltip": "some text",
