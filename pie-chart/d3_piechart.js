@@ -45,31 +45,28 @@ function draw_pie(config) {
         .innerRadius(innerRadius)
         .outerRadius(outerRadius * 1.02);
 
-    // x and y coords of the pie chart centre
-    let cx = outerRadius + margin.left,
-        cy = outerRadius + margin.top;
-
     // create svg area
     let svg = d3.selectAll(divId)
         .append('svg')
         .attr({id : chartId, width : w, height : h})
         .append('g')
-        .attr('transform', `translate(${cx}, ${cy})`);
+        .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
     let pieData = pie(config.data)
+
     // append group for each datum in config.data
     let arcs = svg.selectAll('.arc')
         .data(pieData)
         .enter()
         .append('g')
-        .attr('class', 'arc');
+        .attr('class', 'arc')
+        .attr('transform', `translate(${outerRadius}, ${outerRadius})`);
 
-    // generate the pie slices
+    // generate pie slices
     arcs.append('path')
         .attr('d', arc)
         .attr('fill', (d, i) => color(i))
         .style('stroke', 'white')
-        // .style('stroke-width', '1px')
         // grow on mouseover
         .on('mouseover', function(){
             d3.select(this)
@@ -94,7 +91,7 @@ function draw_pie(config) {
                     .ease('bounce')
                     .attr('d', arc)
         })
-        // grow back to mouseover size on mouseup when in deepest level
+        // grow back to mouseover size on mouseup when on deepest level
         .on('mouseup', function() {
             let children = this.__data__.data[config.inner];
             if (children === undefined) {
@@ -134,13 +131,12 @@ function draw_pie(config) {
         .attr('class', 'upButton');
 
     // determine the initial radius based on current level and direction
-    let rad = outerRadius / 6,
+    let rad   = outerRadius / 6,
         rInit = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
 
     let circ = upBtn.append('circle')
         .attr('r', rInit)
-        .attr('transform',
-              `translate(${outerRadius}, ${- outerRadius})`)
+        .attr('transform', `translate(${outerRadius * 2}, 0)`)
         .attr('fill', 'green')
         .on('mouseover', function() {
             // disable mouseover transitions on root level because
@@ -206,9 +202,9 @@ function draw_pie(config) {
 //  LEGEND
 // --------------------------------------------------------- //
 
-
-    let spacing  =  5,
-        rectSize = 20;
+    let spacing  =  5,  // space between legend entries
+        rectSize = 16,  // height of legend entry rectangle
+        scaling  =  1;  // intitial scale factor
 
     // feed legend current pie data
     let legend = svg.selectAll('.legend')
@@ -217,32 +213,50 @@ function draw_pie(config) {
         .append('g')
         .attr('class', 'legend')
         .attr('transform', function(d, i) {
-            let height = rectSize + spacing,
-                offset = height * pieData.length,
-                dx     = w / 3 + rectSize,
-                dy     = Math.min(i * height - offset / 2, h / 2)
-            return `translate(${dx}, ${dy})`;
+
+            // is the legend higher than the svg, scale its content
+            if ((rectSize + spacing) * pieData.length >= h) {
+
+                // determine scaling based on svg height, rectangle height and offset
+                scaling  = (h - spacing) / ((rectSize + spacing) * pieData.length)
+                rectSize = rectSize * scaling
+                spacing  = spacing  * scaling
+
+            }
+
+            // declaring height and offset before if clause causes weird behaviour
+            let height = rectSize + spacing,  // height of legend entry rectangle
+                offset = height * pieData.length  // height of the legend
+                dx = w - margin.right + rectSize,
+                dy = (outerRadius - offset / 2) + i * height + spacing;
+
+            return `translate(${dx}, ${dy})`
+
         });
 
     let attrs = {
-        width : rectSize * 2,
+        width : rectSize,
        height : rectSize,
-         fill : (d, i) => color(i)
+         fill : (d, i) => color(i),
+       stroke : (d, i) => color(i)
     };
 
     legend.append('rect')
         .attr(attrs)
 
     legend.append('text')
-        .style("font-size", "10px")
+        .style("font-size", function() {
+            let fontSize = Math.round(10 * scaling)
+            return `${fontSize}px`
+        })
         .style("font-weight", "bold")
-        .attr('x', rectSize * 2.1)
-        .attr('y', rectSize * 0.75)
+        .attr('x', attrs.width + spacing)
+        .attr('y', (attrs.height + 2 * spacing) / 2)
         .text(d => `${d.data.label}`)
 
     legend.on('mouseover', function(d, i) {
         key = d.key
-        console.log('d', d)
+        // console.log('d', d)
         svg.selectAll('.legend')
             .transition()
                 .duration(250)
