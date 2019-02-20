@@ -20,7 +20,11 @@ function draw_pie(config) {
         showLegend = config.legend,
         suffix     = config.suffix == null ? '' : config.suffix,
         margin     = config.margin,
-        w          = $(chart_class_sel).width();
+        w          = $(chart_class_sel).width(),
+
+        spacing =  5,  // space between legend entries
+        rect    = 16,  // height of legend entry rectangle
+        scaling =  1;  // intitial scale factor;
 
     $(chart_class_sel).html('') // delete all content of container
 
@@ -86,21 +90,31 @@ function draw_pie(config) {
         .attr('fill', (d, i) => color(i))
         .style('stroke', 'white')
         // grow on mouseover
-        .on('mouseover', function(){
+        .on('mouseover', function(d){
+            key = d.data.label
             d3.select(this)
                 .transition()
                     .duration(125)
                     .ease('in')
                     .attr('d', arcOver)
+
+            d3.selectAll(rect_class_sel)
+                .transition()
+                    .attr('width', d => d.data.label == key ? rect * 4 : rect)
         })
         // back to normal on mouseout
-        .on('mouseout', function() {
+        .on('mouseout', function(d) {
+            key = d.data.label
             d3.select(this)
                 .transition()
                     .ease('out')
                     .delay(100)
                     .duration(150)
                     .attr('d', arc)
+
+            d3.selectAll(rect_class_sel)
+                .transition()
+                    .attr('width', rect)
         })
         // back to normal when left button is pressed
         .on('mousedown', function() {
@@ -146,6 +160,7 @@ function draw_pie(config) {
 
 // --------------------------------------------------------- //
 //  UP BUTTON
+//  to-do: fade/unfade transitions for the arrow polygon
 // --------------------------------------------------------- //
 
     let upBtn = svg.append('g')
@@ -158,82 +173,95 @@ function draw_pie(config) {
     let btnAttr = {
                 r : rInit,
              fill : 'green',
-        transform : `translate(${outerRadius * 2}, 0)`
+        transform : `translate(${outerRadius * 2}, 0)`,
+            class : button_class
     }
 
     let circ = upBtn.append('circle')
         .attr(btnAttr)
-        .on('mouseover', function() {
-            // disable mouseover transitions on root level because
-            // it otherwise interferes with other transitions
-            if (config.currentLevel > 0)
+
+    // disable some transitions on root level because they cause
+    // problems with the conditional transitions further down
+    if (config.currentLevel > 0) {
+
+        circ.on('mouseover', function() {
                 d3.select(this)
                     .transition()
                         .duration(125)
                         .ease('in')
                         .attr('r', rad * 1.05)
-        })
-        .on('mouseout', function() {
-            if (config.currentLevel > 0)
+            })
+            .on('mouseout', function() {
                 d3.select(this)
                     .transition()
                         .ease('out')
                         .delay(100)
                         .duration(150)
                         .attr('r', rad)
-        })
-        .on('mousedown', function() {
-            if (config.currentLevel > 0) {
+            })
+            .on('mousedown', function() {
                 d3.select(this)
                     .transition()
                         .ease('bounce')
                         .attr('r', rad * 0.95)
-            }
+            })
+    }
+
+    circ.on('click', function() {
+        // check if parent layer is root
+        if (config.history[config.currentLevel - 2] !== undefined) {
+            config.data = config.history[--config.currentLevel - 1]
+            config.history.pop()  // delete last history entry
+            config.goingUp = true
+            draw_pie(config)
+        }
+        else if (config.currentLevel == 1) {
+            config.data = config.og
+            config.currentLevel--
+            config.history.pop()
+            config.goingUp = true
+            draw_pie(config)
+        }
+    });
+
+    // conditional transitions on up-button
+    if (config.currentLevel == 1) {
+        // make button appear on level 1
+        circ.transition()
+            .ease('bounce')
+            .duration(500)
+            .attr('r', rad)
+    }
+    else if (config.currentLevel == 0){
+        // make button dissappear on root level
+        circ.transition()
+            .delay(150)
+            .ease('out')
+            .attr('r', 0)
+
+        // setting goingUp to false will set the initial radius to 0 for the
+        // next redraw so the transition will not trigger again on page zoom
+        config.goingUp = false
+    }
+
+    // add up-triangle to the button to make clear what it does
+    let arrow = upBtn.append('polygon')
+        .attr('class', button_class)
+        .attr('transform', `translate(${outerRadius * 2}, 0)`)
+        .attr('fill', 'white')
+        .attr('points', function() {
+            if (config.currentLevel > 0)
+                // make coords relative to button size
+                return `${-rad/3},${rad/3} 0,${-rad/2} ${rad/3},${rad/3} 0,${rad/4}`
         })
-        .on('click', function() {
-            // check if parent layer is root
-            if (config.history[config.currentLevel - 2] !== undefined) {
-                config.data = config.history[--config.currentLevel - 1]
-                config.history.pop()  // delete last history entry
-                config.goingUp = true
-                draw_pie(config)
-            }
-            else if (config.currentLevel == 1) {
-                config.data = config.og
-                config.currentLevel--
-                config.history.pop()
-                config.goingUp = true
-                draw_pie(config)
-            }
-        });
-        // conditional transitions on up-button
-        if (config.currentLevel == 1) {
-            circ.transition()
-                .ease('bounce')
-                .duration(500)
-                .attr('r', rad)
-        }
-        else if (config.currentLevel == 0){
-            circ.transition()
-                .delay(150)
-                .ease('out')
-                .attr('r', 0)
-
-            // setting goingUp to false will set the initial radius to 0 for the
-            // next redraw so the transition will not trigger again on page zoom
-            config.goingUp = false
-        }
-
+        .style('pointer-events', 'none'); // make arrow clickthrough for now
 
 // --------------------------------------------------------- //
 //  LEGEND
+//  todo: multiple columns instead of scaling down to unreadable sizes
 // --------------------------------------------------------- //
-    // TODO: multiple columns instead of scaling down to unreadable sizes
-    if (showLegend) {
 
-        let spacing =  5,  // space between legend entries
-            rect    = 16,  // height of legend entry rectangle
-            scaling =  1;  // intitial scale factor
+    if (showLegend) {
 
         // feed legend current pie data
         let legend = svg.selectAll(legend_class_sel)
@@ -263,7 +291,7 @@ function draw_pie(config) {
             });
 
         // legend rectangle attributes
-        let attrs = {
+        let legendAttrs = {
             width : rect,
            height : rect,
             class : rect_class,
@@ -272,20 +300,23 @@ function draw_pie(config) {
         };
 
         legend.append('rect')
-            .attr(attrs)
+            .attr(legendAttrs)
 
+        // add legend entry labels
         legend.append('text')
             .style('font-size', function() {
                 let fontSize = Math.round(10 * scaling)
                 return `${fontSize}px`
             })
             .style('font-weight', 'bold')
-            .attr('x', attrs.width + spacing)
-            .attr('y', (attrs.height + 2 * spacing) / 2)
-            .text(d => `${d.data.label}`)
+            .attr('x', legendAttrs.width + spacing)
+            .attr('y', (legendAttrs.height + 1.5 * spacing) / 2)
+            // .text(d => text_truncate(d.data.label, 15)) // truncate long strings
+            .text(d => d.data.label)
 
         // let legend entries behave like arcs when hovering and clicking
-        legend.on('mouseover', function(d) {
+        legend.selectAll('rect')
+            .on('mouseover', function(d) {
                 key = d.data.label
                 arcs.selectAll('path')
                     .each(function() {
@@ -299,8 +330,7 @@ function draw_pie(config) {
                             })
                     })
             })
-            .on('mouseout', function(d) {
-                key = d.data.label
+            .on('mouseout', function() {
                 arcs.transition()
                         .duration(250)
                         .attr('opacity', 1)
@@ -311,8 +341,7 @@ function draw_pie(config) {
                         .attr('d', arc)
             })
             // back to normal when left button is pressed
-            .on('mousedown', function(d) {
-                key = d.data.label
+            .on('mousedown', function() {
                 arcs.selectAll('path')
                     .each(function() {
                         d3.select(this)
@@ -360,6 +389,11 @@ function draw_pie(config) {
 //  TOOLTIP
 // --------------------------------------------------------- //
 
+} // eof
 
 
-} // end of file
+text_truncate = function(str, length) {
+    if (length === null) length = 20;
+    if (str.length > length) return `${str.substring(0, length - 3)}...`
+    else return str;
+}
