@@ -63,7 +63,7 @@ function draw_pie(config) {
     // bigger outerRadius for mouseover transition
     let arcOver = d3.svg.arc()
         .innerRadius(innerRadius)
-        .outerRadius(outerRadius * 1.03);
+        .outerRadius(outerRadius * 1.05);
 
     // create svg area
     let svg = d3.selectAll(chart_class_sel)
@@ -284,9 +284,7 @@ function draw_pie(config) {
             .attr('y', (attrs.height + 2 * spacing) / 2)
             .text(d => `${d.data.label}`)
 
-        let legendOver = d3.svg.arc()
-            .outerRadius(outerRadius * 1.06);
-
+        // let legend entries behave like arcs when hovering and clicking
         legend.on('mouseover', function(d) {
                 key = d.data.label
                 arcs.selectAll('path')
@@ -296,8 +294,8 @@ function draw_pie(config) {
                             .transition()
                             .duration(250)
                             .attr('d', function(d) {
-                                let currArc = key == arcLabel ? legendOver : arc;
-                                return currArc(d)
+                                let newArc = key == arcLabel ? arcOver : arc;
+                                return newArc(d)
                             })
                     })
             })
@@ -312,9 +310,49 @@ function draw_pie(config) {
                         .ease('out')
                         .attr('d', arc)
             })
-            .on('click', function(d) {
-
+            // back to normal when left button is pressed
+            .on('mousedown', function(d) {
+                key = d.data.label
+                arcs.selectAll('path')
+                    .each(function() {
+                        d3.select(this)
+                            .transition()
+                                .ease('bounce')
+                                .attr('d', arc)
+                    })
             })
+            // grow back to mouseover size on mouseup when on deepest level
+            .on('mouseup', function(d) {
+                key = d.data.label
+                arcs.selectAll('path')
+                    .each(function() {
+                        let children = this.__data__.data[config.inner],
+                            arcLabel = this.__data__.data.label;
+
+                        if (children === undefined) {
+                            d3.select(this)
+                                .transition()
+                                    .ease('out')
+                                    .duration(150)
+                                    .attr('d', function(d) {
+                                        let newArc = key == arcLabel ? arcOver : arc;
+                                        return newArc(d)
+                                    })
+                        }
+                    })
+            })
+            // drill down one level on click
+            .on('click', function() {
+                // check for child nodes and set them as config.data
+                let children = this.__data__.data[config.inner];
+                if (children !== undefined) {
+                    config.data = children;
+                    config.currentLevel++
+                    config.history.push(children)
+                    config.goingUp = false
+                    draw_pie(config)
+                }
+            });
     }
 
 
