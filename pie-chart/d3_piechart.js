@@ -17,19 +17,27 @@ function draw_pie(config) {
         button_class_sel = `.${button_class}`,
         rect_class_sel   = `.${rect_class}`,
 
-        showLegend = config.legend,
         suffix     = config.suffix == null ? '' : config.suffix,
         margin     = config.margin,
         w          = $(chart_class_sel).width(),
 
+        showLegend = config.legend,
         spacing =  5,  // space between legend entries
         rect    = 16,  // height of legend entry rectangle
-        scaling =  1;  // intitial scale factor;
+        scaling =  1;  // intitial legend scaling factor
 
     $(chart_class_sel).html('') // delete all content of container
 
     // set current level to 0 on first load
     if (!config.currentLevel) config.currentLevel = 0
+
+    // declare empty arrays to store breadcrumbs
+    if (!config.history) config.history = []
+    if (!config.headings) config.headings = []
+
+    // set heading of current level
+    if (config.headings.length > 0)
+        config.heading = config.headings[config.currentLevel - 1]
 
     // save first level data as new attribute
     if (config.currentLevel === 0 && !config.og) config.og = config.data
@@ -48,7 +56,7 @@ function draw_pie(config) {
 //  PIE CHART
 // --------------------------------------------------------- //
 
-    if (showLegend) margin.right = 200
+    if (showLegend) margin.right = 250
 
     let outerRadius = (w - margin.left - margin.right) / 2,
         innerRadius   = 0,
@@ -76,6 +84,14 @@ function draw_pie(config) {
         .append('g')
         .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
+    let heading = svg.append('text')
+        .text(config.heading)
+        .attr('x', outerRadius)
+        .attr('y', - margin.top / 2)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '18px')
+        .style('font-weight', 'bold');
+
     // append group for each datum in config.data
     let arcs = svg.selectAll(layer_class_sel)
         .data(pieData)
@@ -98,9 +114,18 @@ function draw_pie(config) {
                     .ease('in')
                     .attr('d', arcOver)
 
+            // make the legend rectangle transition depending on textwidth
             d3.selectAll(rect_class_sel)
                 .transition()
-                    .attr('width', d => d.data.label == key ? rect * 4 : rect)
+                    .attr('width', function(d) {
+                        if (d.data.label == key) {
+                            // nextsibling of rectangle is always its label
+                            let w = d3.select(this.nextSibling).node().getBBox().width
+                            return 2 * rect + w
+                        } else {
+                            return rect
+                        }
+                    })
         })
         // back to normal on mouseout
         .on('mouseout', function(d) {
@@ -139,6 +164,7 @@ function draw_pie(config) {
             // check for child nodes and set them as config.data
             let children = this.__data__.data[config.inner];
             if (children !== undefined) {
+                config.headings.push(this.__data__.data.label)
                 config.data = children;
                 config.currentLevel++
                 config.history.push(children)
@@ -167,18 +193,32 @@ function draw_pie(config) {
         .attr('class', button_class);
 
     // determine the initial radius based on current level and direction
-    let rad   = outerRadius / 6,
+    let rad   = outerRadius / 7,
         rInit = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
 
     let btnAttr = {
                 r : rInit,
              fill : 'green',
-        transform : `translate(${outerRadius * 2}, 0)`,
+        transform : `translate(${outerRadius * 1.9}, 0)`,
             class : button_class
     }
 
     let circ = upBtn.append('circle')
         .attr(btnAttr)
+
+
+    // add up-triangle to the button to make clear what it does
+    let arrow = upBtn.append('polygon')
+        .attr('class', button_class)
+        .attr('transform', `translate(${outerRadius * 1.9}, 0)`)
+        .attr('fill', 'white')
+        .attr('points', function() {
+            if (config.currentLevel > 0)
+                // make coords relative to button size
+                return `${-rad/3},${rad/3} 0,${-rad/2} ${rad/3},${rad/3} 0,${rad/4}`
+        })
+        .style('pointer-events', 'none'); // make arrow clickthrough for now
+
 
     // disable some transitions on root level because they cause
     // problems with the conditional transitions further down
@@ -211,7 +251,8 @@ function draw_pie(config) {
         // check if parent layer is root
         if (config.history[config.currentLevel - 2] !== undefined) {
             config.data = config.history[--config.currentLevel - 1]
-            config.history.pop()  // delete last history entry
+            config.history.pop()   // delete last history entry
+            config.headings.pop()  // delete last heading in heading history
             config.goingUp = true
             draw_pie(config)
         }
@@ -219,7 +260,9 @@ function draw_pie(config) {
             config.data = config.og
             config.currentLevel--
             config.history.pop()
+            config.headings.pop()
             config.goingUp = true
+            config.heading = '' // empty heading on root level
             draw_pie(config)
         }
     });
@@ -243,18 +286,6 @@ function draw_pie(config) {
         // next redraw so the transition will not trigger again on page zoom
         config.goingUp = false
     }
-
-    // add up-triangle to the button to make clear what it does
-    let arrow = upBtn.append('polygon')
-        .attr('class', button_class)
-        .attr('transform', `translate(${outerRadius * 2}, 0)`)
-        .attr('fill', 'white')
-        .attr('points', function() {
-            if (config.currentLevel > 0)
-                // make coords relative to button size
-                return `${-rad/3},${rad/3} 0,${-rad/2} ${rad/3},${rad/3} 0,${rad/4}`
-        })
-        .style('pointer-events', 'none'); // make arrow clickthrough for now
 
 // --------------------------------------------------------- //
 //  LEGEND
@@ -303,7 +334,7 @@ function draw_pie(config) {
             .attr(legendAttrs)
 
         // add legend entry labels
-        legend.append('text')
+        legendText = legend.append('text')
             .style('font-size', function() {
                 let fontSize = Math.round(10 * scaling)
                 return `${fontSize}px`
@@ -311,8 +342,21 @@ function draw_pie(config) {
             .style('font-weight', 'bold')
             .attr('x', legendAttrs.width + spacing)
             .attr('y', (legendAttrs.height + 1.5 * spacing) / 2)
-            // .text(d => text_truncate(d.data.label, 15)) // truncate long strings
-            .text(d => d.data.label)
+            .text(d => text_truncate(d.data.label, 13)) // truncate long strings
+            // .text(d => d.data.label)
+
+        // show full label on hover
+        legendText.on('mouseover', function() {
+            d3.select(this)
+                .transition()
+                    .text(this.__data__.data.label)
+        })
+        // truncate long strings again on mouseout
+        .on('mouseout', function() {
+            d3.select(this)
+                .transition()
+                    .text(d => text_truncate(d.data.label, 13))
+        })
 
         // let legend entries behave like arcs when hovering and clicking
         legend.selectAll('rect')
@@ -331,10 +375,6 @@ function draw_pie(config) {
                     })
             })
             .on('mouseout', function() {
-                arcs.transition()
-                        .duration(250)
-                        .attr('opacity', 1)
-
                 arcs.selectAll('path')
                     .transition()
                         .ease('out')
@@ -375,6 +415,7 @@ function draw_pie(config) {
                 // check for child nodes and set them as config.data
                 let children = this.__data__.data[config.inner];
                 if (children !== undefined) {
+                    config.headings.push(this.__data__.data.label)
                     config.data = children;
                     config.currentLevel++
                     config.history.push(children)
@@ -393,7 +434,7 @@ function draw_pie(config) {
 
 
 text_truncate = function(str, length) {
-    if (length === null) length = 20;
+    if (length === null) length = 15;
     if (str.length > length) return `${str.substring(0, length - 3)}...`
     else return str;
 }
