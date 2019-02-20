@@ -7,12 +7,9 @@ let pie_area = (function(){
         ref_height : 350,
          min_width : 200,
         min_height : 200,
-      currentLevel : 0,
-           goingUp : false,
             legend : true,
              inner : 'children',
-            div_id : '#chartDiv',
-          chart_id : '#pieChart',
+       containerId : 'pie-chart',
             margin : {    top : 50,
                         right : 50,
                        bottom : 50,
@@ -24,6 +21,7 @@ let pie_area = (function(){
     function init(json) {
         // config.data = json.data;
         config.data = json.n_prod;
+        config.containerId = 'drill-down-pie-chart'
         redraw()
     }
 
