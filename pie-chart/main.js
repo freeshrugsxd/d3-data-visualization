@@ -10,6 +10,7 @@ let pie_area = (function(){
              inner : 'children',
        containerId : 'pie-chart',
             legend : true,
+   animated_legend : false,
           headline : false,
             labels : false,
             margin : {    top : 50,

@@ -26,6 +26,7 @@ function draw_pie(config) {
     showHeading = config.headline,
     showLabels  = config.labels,
     showLegend  = config.legend,
+    animLegend  = config.animated_legend,
     rect        = 16,  // height of legend entry rectangle
     spacing     =  5,  // space between legend entries
     scaling     =  1;  // intitial legend scaling factor
@@ -49,8 +50,8 @@ function draw_pie(config) {
 
   // pie chart params
   let outerRadius = (w - margin.left - margin.right) / 2, // pie chart's outer radius
-    innerRadius = 0,                                    // pie chart's inner radius
-    h = 2 * outerRadius + margin.top + margin.bottom;   // height of svg container
+    innerRadius = 0,                                      // pie chart's inner radius
+    h = 2 * outerRadius + margin.top + margin.bottom;     // height of svg container
 
   let colorrange = d3.range(50)
     .map(d3.scale.category20());
@@ -58,6 +59,8 @@ function draw_pie(config) {
   let color = d3.scale.ordinal()
     .range(colorrange);
 
+  // define tooltip
+  // coords are declared later on mouse events
   let tooltip = d3.select('body')
     .append('div')
     .attr('class', ttip_class)
@@ -140,19 +143,21 @@ function draw_pie(config) {
           .ease('in')
           .attr('d', arcOver)
 
-      // make the legend rectangle transition depending width of it's label
-      key = d.data.label
-      d3.selectAll(rect_class_sel)
-        .transition()
-          .attr('width', function(d) {
-            if (d.data.label == key) {
-              // nextsibling of rectangle is always its label
-              let w = d3.select(this.nextSibling).node().getBBox().width;
-              return rect + w + 2 * spacing
-            } else {
-              return rect
-            }
-          })
+      if (animLegend) {
+        // make the legend rectangle transition depending width of it's label
+        key = d.data.label
+        d3.selectAll(rect_class_sel)
+          .transition()
+            .attr('width', function(d) {
+              if (d.data.label == key) {
+                // nextsibling of rectangle is always its label
+                let w = d3.select(this.nextSibling).node().getBBox().width;
+                return rect + w + 2 * spacing
+              } else {
+                return rect
+              }
+            })
+      }
     })
     .on('mousemove', function(d) {
       // show tooltip at cursor position and make it clickthrough
@@ -399,6 +404,14 @@ function draw_pie(config) {
     // let legend entries behave like arcs when hovering and clicking
     legend.selectAll('rect')
       .on('mouseover', function(d) {
+
+        // show tooltip at cursor position and make it clickthrough
+        tooltip.style('top', `${d3.event.pageY + 15}px`)
+          .style('left', `${d3.event.pageX - 50}px`)
+          .style('pointer-events', 'none')
+          .style('visibility', 'visible')
+          .html(d.data.tooltip)
+
         key = d.data.label
         arcs.selectAll('path')
           .each(function() {
@@ -412,13 +425,23 @@ function draw_pie(config) {
               })
           })
       })
+      .on('mousemove', function(){
+        // show tooltip at cursor position and make it clickthrough
+        tooltip.style('top', `${d3.event.pageY + 15}px`)
+          .style('left', `${d3.event.pageX + 10}px`)
+          .style('pointer-events', 'none')
+          .style('visibility', 'visible')
+          .html(d.data.tooltip)
+      })
       .on('mouseout', function() {
         arcs.selectAll('path')
           .transition()
             .ease('out')
             .attr('d', arc)
-      })
 
+        // hide tooltip and remove its content
+        tooltip.html('').style('visibility', 'hidden');
+      })
       .on('mousedown', function() {
         // shrink arc back to normal when left button is pressed
         arcs.selectAll('path')
