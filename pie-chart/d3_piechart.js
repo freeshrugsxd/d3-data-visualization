@@ -314,6 +314,12 @@ function draw_pie(config) {
           .transition()
             .ease('bounce')
             .attr('r', rad * 0.95)
+
+        backTxt.transition()
+            .ease('out')
+            .delay(100)
+            .duration(150)
+          .style('font-size', `${(rad / 2) * 0.95}px`)
       })
   }
 
