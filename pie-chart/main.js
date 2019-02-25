@@ -9,9 +9,10 @@ let pie_area = (function(){
              inner : 'children',
        containerId : 'pie-chart',
             legend : true,
-   animated_legend : true,
+      fancy_legend : true,
           headline : false,
             labels : false,
+             color : 'cat10',
             margin : {    top : 50,
                         right : 50,
                        bottom : 50,
@@ -27,21 +28,23 @@ let pie_area = (function(){
     config_array.push( jQuery.extend(true, {}, config_template) );
 
     function init(json) {
-        config_array[0].data = json.my_test_data
+        config_array[0].data        = json.my_test_data
         config_array[0].containerId = 'drill-down-pie-chart-1'
-        config_array[0].legend = false
-        config_array[0].headline = true
-        config_array[0].labels = true
+        config_array[0].legend      = false
+        config_array[0].headline    = true
+        config_array[0].labels      = true
+        config_array[0].color       = 'cat20'
+
+        config_array[1].data         = json.n_prod
+        config_array[1].containerId  = 'drill-down-pie-chart-2'
+        config_array[1].headline     = true
+        config_array[1].fancy_legend = false
+        config_array[1].color        = 'pink'
 
 
-        config_array[1].data = json.n_prod
-        config_array[1].containerId = 'drill-down-pie-chart-2'
-        config_array[1].headline = true
-        config_array[1].animated_legend = false
-
-        config_array[2].data = json.n_prod
+        config_array[2].data        = json.n_prod
         config_array[2].containerId = 'drill-down-pie-chart-3'
-
+        config_array[2].color       = 'orange'
         redraw()
     }
 

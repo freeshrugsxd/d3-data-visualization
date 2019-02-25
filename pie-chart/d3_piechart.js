@@ -22,7 +22,7 @@ function draw_pie(config) {
     showHeading = config.headline,
     showLabels  = config.labels,
     showLegend  = config.legend,
-    animLegend  = config.animated_legend, // toggles transitions for legend rectangl
+    fancyLegend = config.fancy_legend, // toggles transitions for legend rectangl
     rect        = 16,  // height of legend entry rectangle
     spacing     =  5,  // space between legend entries
     scaling     =  1;  // intitial legend scaling factor
@@ -47,11 +47,22 @@ function draw_pie(config) {
     innerRadius = 0,                                      // pie chart's inner radius
     h = 2 * outerRadius + margin.top + margin.bottom;     // height of svg container
 
-  let colorrange = d3.range(50)
-    .map(d3.scale.category20());
+  let colorrange = {
+      blue : ['#045A8D', '#2B8CBE', '#74A9CF', '#A6BDDB', '#D0D1E6', '#F1EEF6'],
+    orange : ['#B30000', '#E34A33', '#FC8D59', '#FDBB84', '#FDD49E', '#FEF0D9'],
+      pink : ['#980043', '#DD1C77', '#DF65B0', '#C994C7', '#D4B9DA', '#F1EEF6'],
+     green : ['#10562d', '#188144', '#1fa055', '#21ab5a', '#25c166', '#29d671',
+              '#3eda7f', '#69e29c', '#94ebb8'],
+    nature : ['#77729b', '#ca6764', '#b3a75c', '#659faf', '#988261', '#fa9c4b',
+              '#fcc862'],
+     cat10 : d3.range(10).map(d3.scale.category10()),
+     cat20 : d3.range(20).map(d3.scale.category20()),
+    cat20b : d3.range(20).map(d3.scale.category20b()),
+    cat20c : d3.range(20).map(d3.scale.category20c())
+  };
 
   let color = d3.scale.ordinal()
-    .range(colorrange);
+    .range(colorrange[config.color]);
 
   // define tooltip (coords are declared later on mouse events)
   let tooltip = d3.select('body')
@@ -143,7 +154,7 @@ function draw_pie(config) {
           .ease('in')
           .attr('d', arcOver)
 
-      if (animLegend) {
+      if (fancyLegend) {
         // make the legend rectangle transition
         // width of transition depends on length of label text next to it
         key = d.data.label
@@ -237,7 +248,6 @@ function draw_pie(config) {
 
 // --------------------------------------------------------- //
 //  UP BUTTON
-//  to-do: fade/unfade transitions for the arrow polygon
 // --------------------------------------------------------- //
 
   let upBtn = svg.append('g')
@@ -260,18 +270,14 @@ function draw_pie(config) {
   let circ = upBtn.append('circle')
     .attr(btnAttr)
 
-
-  // add up-triangle to the button to make clear what it does
-  let arrow = upBtn.append('polygon')
-    .attr('class', button_class)
-    .attr('transform', `translate(${outerRadius * 1.9}, 0)`)
-    .attr('fill', 'white')
-    .attr('points', function() {
-      if (config.currentLevel > 0)
-        // make coords relative to button size
-        return `${-rad/3},${rad/3} 0,${-rad/2} ${rad/3},${rad/3} 0,${rad/4}`
-    })
-    .style('pointer-events', 'none'); // make arrow clickthrough for now
+  let backTxt = upBtn.append('text')
+    .text('BACK')
+    .attr('transform', `translate(${outerRadius * 1.9}, ${rad/8})`)
+    .attr('text-anchor', 'middle')
+    .style('fill', 'white')
+    .style('font-size', `${rInit / 2}px`)
+    .style('font-weight', 'bold')
+    .style('pointer-events', 'none');
 
   // disable some transitions on root level because they cause
   // problems with the conditional transitions further down
@@ -283,6 +289,11 @@ function draw_pie(config) {
             .duration(125)
             .ease('in')
             .attr('r', rad * 1.05)
+
+        backTxt.transition()
+          .ease('in')
+          .duration(125)
+          .style('font-size', `${(rad / 2) * 1.05}px`)
       })
       .on('mouseout', function() {
         d3.select(this)
@@ -291,6 +302,12 @@ function draw_pie(config) {
             .delay(100)
             .duration(150)
             .attr('r', rad)
+
+        backTxt.transition()
+            .ease('out')
+            .delay(100)
+            .duration(150)
+          .style('font-size', `${rad / 2}px`)
       })
       .on('mousedown', function() {
         d3.select(this)
@@ -320,6 +337,11 @@ function draw_pie(config) {
       .ease('bounce')
       .duration(500)
       .attr('r', rad)
+
+    backTxt.transition()
+      .ease('bounce')
+      .duration(500)
+      .style('font-size', `${rad / 2}px`)
   }
   else if (config.currentLevel == 0){
     // make button dissappear on root level
@@ -327,6 +349,11 @@ function draw_pie(config) {
       .delay(150)
       .ease('out')
       .attr('r', 0)
+
+    backTxt.transition()
+      .ease('out')
+      .delay(150)
+      .style('font-size', '0px')
 
     // setting goingUp to false will set the initial radius to 0 for the
     // next redraw so the transition will not trigger again on page zoom
