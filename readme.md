@@ -1,8 +1,9 @@
-# Data Visualization Project
+# D3 Data Visualization
 
-<a href="https://d3js.org"><img src="https://d3js.org/logo.svg" align="right" hspace="10" vspace="6"></a>
+<img src="https://d3js.org/logo.svg" align="left">
 
-These are my efforts to create data driven, reusable visualizations on a webpage using JavaScript's D3 library.
+These are my efforts to create data driven visualizations on a web page using JavaScript's D3 library.
+My aim is to make them reusable and configurable to serve multiple purposes.
 
 Included are:
 
@@ -21,7 +22,7 @@ Features:
 * drill down by clicking the pie slice or the legend entry
 * drill up by clicking the BACK-Button
 * hover and click transitions makes the chart feel responsive
-* tooltip displays information on currently hovered data subset
+* tool tip displays information on currently hovered data subset
 * 9 different color ramps
 
 Some features can be turned on or off at will by setting their values to true or false in the config.
