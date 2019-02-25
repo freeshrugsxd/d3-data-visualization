@@ -1,10 +1,6 @@
 function draw_pie(config) {
 
-  let ref_width = config.ref_width,
-    ref_height  = config.ref_height,
-    min_width   = config.min_width,
-    min_height  = config.min_height,
-    containerId = config.containerId,
+  let containerId = config.containerId,
 
     layer_class  = `arc_${containerId}`,
     legend_class = `legend_${containerId}`,
@@ -26,7 +22,7 @@ function draw_pie(config) {
     showHeading = config.headline,
     showLabels  = config.labels,
     showLegend  = config.legend,
-    animLegend  = config.animated_legend,
+    animLegend  = config.animated_legend, // toggles transitions for legend rectangl
     rect        = 16,  // height of legend entry rectangle
     spacing     =  5,  // space between legend entries
     scaling     =  1;  // intitial legend scaling factor
@@ -37,17 +33,11 @@ function draw_pie(config) {
   // set current level to 0 on first load
   if (!config.currentLevel) config.currentLevel = 0
 
-  // save first level data as new attribute
-  if (config.currentLevel === 0 && !config.og) config.og = config.data
-
-  // set initial direction
-  // config.goingUp is used to decide for a radius for the layer-up button.
-  // without it, the "pop up" transition of the circle would play every time
-  // you drill down a layer and that does not feel right
-  if (config.goingUp === undefined) config.goingUp = false
-
   // create empty array to store breadcrumbs
-  if (!config.history) config.history = []
+  if (config.currentLevel === 0 && !config.history) {
+    config.history = []
+    config.history.push(config.data)
+  }
 
   // increase right margin if legend is shown
   if (showLegend) margin.right = 300
@@ -63,8 +53,7 @@ function draw_pie(config) {
   let color = d3.scale.ordinal()
     .range(colorrange);
 
-  // define tooltip
-  // coords are declared later on mouse events
+  // define tooltip (coords are declared later on mouse events)
   let tooltip = d3.select('body')
     .append('div')
     .attr('class', ttip_class)
@@ -79,6 +68,12 @@ function draw_pie(config) {
     .style('background', '#fff')
     .style('border-radius', '2px')
     .style('opacity', 0.8);
+
+  // set initial direction
+  if (config.goingUp === undefined) config.goingUp = false
+  // config.goingUp is used to decide for a radius for the layer-up button.
+  // without it, the "pop up" transition of the circle would play every drill down
+
 
 // --------------------------------------------------------- //
 //  PIE CHART
@@ -106,11 +101,13 @@ function draw_pie(config) {
     .append('g')
     .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-
   // display headline with name of current layer
   if (showHeading) {
+
     if (!config.headings) config.headings = [] // empty array for heading breadcrumbs
+
     if (config.currentLevel === 0) config.heading = '' // empty heading on root level
+
     if (config.headings.length > 0)
       // set current headline
       config.heading = config.headings[config.currentLevel - 1]
@@ -153,12 +150,16 @@ function draw_pie(config) {
         d3.selectAll(rect_class_sel)
           .transition()
             .attr('width', function(d) {
+
               if (d.data.label == key) {
+
                 // get width of text next to the rectangle
                 // nextSibling of rectangle is always its label
                 let w = d3.select(this.nextSibling).node().getBBox().width;
+
                 return rect + w + 2 * spacing
               } else {
+
                 return rect
               }
             })
@@ -167,7 +168,7 @@ function draw_pie(config) {
     .on('mousemove', function(d) {
       // show tooltip at cursor position and make it clickthrough
       tooltip.html(d.data.tooltip)
-        .style('top', `${d3.event.pageY + 15}px`)
+        .style('top',  `${d3.event.pageY + 15}px`)
         .style('left', `${d3.event.pageX + 10}px`)
         .style('pointer-events', 'none')
         .style('visibility', 'visible')
@@ -214,10 +215,11 @@ function draw_pie(config) {
       if (children !== undefined) {
         if (showHeading) config.headings.push(this.__data__.data.label)
 
-        config.data = children
         config.currentLevel++
-        config.history.push(children)
+        config.data    = children
         config.goingUp = false
+        config.history.push(children)
+
         draw_pie(config)
       }
     });
@@ -247,7 +249,6 @@ function draw_pie(config) {
     // a radius of 0 is needed for the "pop up" transition on level 1
     // and for the circle to stay hidden when chart is initialized
     rInit = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
-    // rInit = rad
 
   let btnAttr = {
             r : rInit,
@@ -300,21 +301,11 @@ function draw_pie(config) {
   }
 
   circ.on('click', function() {
-    // check if parent layer is root
-    if (config.history[config.currentLevel - 2] !== undefined) {
-      config.data = config.history[--config.currentLevel - 1]
-      config.history.pop()  // delete last history breadcrumb
+    // check if we are on root layer
+    if (config.history[config.currentLevel - 1] !== undefined) {
+      config.data    = config.history[--config.currentLevel]
       config.goingUp = true
-
-      if (showHeading) config.headings.pop()  // delete last heading breadcrumb
-
-      draw_pie(config)
-    }
-    else if (config.currentLevel == 1) {
-      config.data = config.og
-      config.currentLevel--
       config.history.pop()  // delete last history breadcrumb
-      config.goingUp = true
 
       if (showHeading) config.headings.pop()  // delete last heading breadcrumb
 
@@ -358,32 +349,38 @@ function draw_pie(config) {
       .attr('transform', function(d, i) {
         // n is the max number of legend entries that fit in the svg vertically
         let n = Math.floor((h - margin.top - margin.bottom) / (rect + spacing))
+
         if (pieData.length < n) {
+
           // if all rectangles fit into one column, use only one column
           let height = rect + spacing,
-            offset = height * pieData.length,
+            offset   = height * pieData.length,
             dx = w - margin.right,
             dy = (outerRadius - offset / 2) + i * height + spacing;
+
           return `translate(${dx}, ${dy})`
         } else {
+
           // use two columns if there are too many rectangles for one column
           if (((rect + spacing) * pieData.length) > h * 2) {
+
             // scale down the legend if there are too many rectangles for two cols
             scaling = (h * 2 - margin.top - margin.bottom) /
                       ((rect + spacing) * pieData.length)
-            rect = rect * scaling
+
+            rect    = rect * scaling
             spacing = spacing * scaling
           }
 
-          let dx = (w - margin.right) + (i % 2) * (margin.right / 3)
-            height = rect + spacing
-            offset = height * pieData.length
+          let height = rect + spacing,
+            offset   = height * pieData.length,
+            dx = (w - margin.right) + (i % 2) * (margin.right / 3),
             dy = (outerRadius - offset / 4) + Math.floor(i / 2) * height + spacing;
+
           return `translate(${dx}, ${dy})`
         }
     });
 
-    // console.log(scaling)
     // legend rectangle attributes
     let legendAttrs = {
        width : rect,
@@ -398,10 +395,10 @@ function draw_pie(config) {
 
     // add legend entry labels
     legendText = legend.append('text')
-      .style('font-size', () => `${Math.round(10 * scaling)}px`)
-      .style('font-weight', 'bold')
       .attr('x', legendAttrs.width + spacing)
       .attr('y', (legendAttrs.height + 1.5 * spacing) / 2)
+      .style('font-size', () => `${Math.round(10 * scaling)}px`)
+      .style('font-weight', 'bold')
       .text(d => text_truncate(d.data.label, 13)) // truncate long strings
       // .text(d => d.data.label)
 
@@ -421,7 +418,7 @@ function draw_pie(config) {
       .on('mouseover', function(d) {
         // show tooltip at cursor position and make it clickthrough
         tooltip.html(d.data.tooltip)
-          .style('top', `${d3.event.pageY + 15}px`)
+          .style('top',  `${d3.event.pageY + 15}px`)
           .style('left', `${d3.event.pageX - 50}px`)
           .style('pointer-events', 'none')
           .style('visibility', 'visible')
@@ -442,7 +439,7 @@ function draw_pie(config) {
       .on('mousemove', function(d){
         // show tooltip at cursor position and make it clickthrough
         tooltip.html(d.data.tooltip)
-          .style('top', `${d3.event.pageY + 15}px`)
+          .style('top',  `${d3.event.pageY + 15}px`)
           .style('left', `${d3.event.pageX + 10}px`)
           .style('pointer-events', 'none')
           .style('visibility', 'visible')
@@ -472,7 +469,7 @@ function draw_pie(config) {
         arcs.selectAll('path')
           .each(function() {
             let children = this.__data__.data[config.inner],
-              arcLabel = this.__data__.data.label;
+              arcLabel   = this.__data__.data.label;
 
             if (children === undefined) {
               d3.select(this)
@@ -492,10 +489,10 @@ function draw_pie(config) {
         // check for child nodes and set them as config.data
         let children = this.__data__.data[config.inner];
         if (children !== undefined) {
-          config.data = children
           config.currentLevel++
-          config.history.push(children)
+          config.data    = children
           config.goingUp = false
+          config.history.push(children)
 
           if (showHeading) config.headings.push(this.__data__.data.label)
 
