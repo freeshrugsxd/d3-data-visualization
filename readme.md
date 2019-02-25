@@ -1,6 +1,9 @@
 # D3 Data Visualization Project
 
+<a href="https://d3js.org"><img src="https://d3js.org/logo.svg" align="left" hspace="10" vspace="6"></a>
+
 These are my efforts to create data driven, reusable visualizations on a webpage using JavaScript's D3 library.
+
 Included are:
 
 * Pie Chart
