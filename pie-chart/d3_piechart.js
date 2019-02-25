@@ -40,7 +40,7 @@ function draw_pie(config) {
   }
 
   // increase right margin if legend is shown
-  if (showLegend) margin.right = 300
+  if (showLegend) margin.right = w * 0.4
 
   // pie chart params
   let outerRadius = (w - margin.left - margin.right) / 2, // pie chart's outer radius
@@ -397,9 +397,9 @@ function draw_pie(config) {
     legendText = legend.append('text')
       .attr('x', legendAttrs.width + spacing)
       .attr('y', (legendAttrs.height + 1.5 * spacing) / 2)
-      .style('font-size', () => `${Math.round(10 * scaling)}px`)
+      .style('font-size', () => `${Math.round(8 * scaling)}px`)
       .style('font-weight', 'bold')
-      .text(d => text_truncate(d.data.label, 13)) // truncate long strings
+      .text(d => text_truncate(d.data.label, 11)) // truncate long strings
       // .text(d => d.data.label)
 
     // show full label on hover
@@ -410,7 +410,7 @@ function draw_pie(config) {
     // truncate long strings again on mouseout
     .on('mouseout', function() {
       d3.select(this)
-        .text(d => text_truncate(d.data.label, 13))
+        .text(d => text_truncate(d.data.label, 11))
     })
 
     // let legend entries behave like arcs when hovering and clicking
