@@ -1,11 +1,14 @@
-# D3 Data Visualization
+# Data Visualization
 
 <img src="https://d3js.org/logo.svg" align="left">
 
-These are my efforts to create data driven visualizations on a web page using JavaScript's D3 library.
-My aim is to make them reusable and configurable to serve multiple purposes.
+In this project I trying to create data driven visualizations on a web page using JavaScript's D3 library.
 
-Included are:
+My aim is to make them reusable, customizable, informative and responsive to user interaction.
+
+There are three particular types of visualization that we will cover.
+
+These are:
 
 * Pie Chart
 * geoJSON

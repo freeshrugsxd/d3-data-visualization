@@ -1,6 +1,8 @@
 function draw_pie(config) {
 
-  let containerId = config.containerId,
+  let maxRadius  = config.max_radius,
+    minRadius    = config.min_radius,
+    containerId  = config.containerId,
 
     layer_class  = `arc_${containerId}`,
     legend_class = `legend_${containerId}`,
@@ -25,7 +27,8 @@ function draw_pie(config) {
     fancyLegend = config.fancy_legend, // toggles transitions for legend rectangl
     rect        = 16,  // height of legend entry rectangle
     spacing     =  5,  // space between legend entries
-    scaling     =  1;  // intitial legend scaling factor
+    scaling     =  1,  // intitial legend scaling factor
+    hDiff       =  0;  // horizontal difference in case max radius is reached
 
   $(chart_class_sel).html('') // delete all content of container
   $(ttip_class_sel).remove()    // remove all leftover tooltips on redraw
@@ -44,8 +47,15 @@ function draw_pie(config) {
 
   // pie chart params
   let outerRadius = (w - margin.left - margin.right) / 2, // pie chart's outer radius
-    innerRadius = 0,                                      // pie chart's inner radius
-    h = 2 * outerRadius + margin.top + margin.bottom;     // height of svg container
+    innerRadius = 0                                       // pie chart's inner radius
+
+  if (outerRadius > maxRadius)
+    hDiff = (w - (maxRadius * 2) - margin.left - margin.right) / 2
+
+  outerRadius = Math.max(outerRadius, minRadius)
+  outerRadius = Math.min(outerRadius, maxRadius)
+
+  let h = 2 * outerRadius + margin.top + margin.bottom;   // height of svg container
 
   let colorrange = {
       blue : ['#045A8D', '#2B8CBE', '#74A9CF', '#A6BDDB', '#D0D1E6', '#F1EEF6'],
@@ -116,9 +126,7 @@ function draw_pie(config) {
   if (showHeading) {
 
     if (!config.headings) config.headings = [] // empty array for heading breadcrumbs
-
     if (config.currentLevel === 0) config.heading = '' // empty heading on root level
-
     if (config.headings.length > 0)
       // set current headline
       config.heading = config.headings[config.currentLevel - 1]
@@ -126,7 +134,7 @@ function draw_pie(config) {
     // create heading that displays the current layer's label
     let heading = svg.append('text')
       .text(config.heading)
-      .attr('x', outerRadius)
+      .attr('x', () => outerRadius + hDiff)
       .attr('y', - margin.top / 2)
       .attr('text-anchor', 'middle')
       .style('font-size', '18px')
@@ -139,7 +147,7 @@ function draw_pie(config) {
     .enter()
     .append('g')
     .attr('class', layer_class)
-    .attr('transform', `translate(${outerRadius}, ${outerRadius})`);
+    .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`);
 
   // generate arcs with mouse events
   arcs.append('path')
@@ -263,7 +271,7 @@ function draw_pie(config) {
   let btnAttr = {
             r : rInit,
          fill : 'green',
-    transform : `translate(${outerRadius * 1.9}, 0)`,
+    transform : `translate(${outerRadius * 1.9 + hDiff}, 0)`,
         class : button_class
   }
 
@@ -272,7 +280,7 @@ function draw_pie(config) {
 
   let backTxt = upBtn.append('text')
     .text('BACK')
-    .attr('transform', `translate(${outerRadius * 1.9}, ${rad/8})`)
+    .attr('transform', `translate(${outerRadius * 1.9 + hDiff}, ${rad/8})`)
     .attr('text-anchor', 'middle')
     .style('fill', 'white')
     .style('font-size', `${rInit / 2}px`)
@@ -430,7 +438,7 @@ function draw_pie(config) {
     legendText = legend.append('text')
       .attr('x', legendAttrs.width + spacing)
       .attr('y', (legendAttrs.height + 1.5 * spacing) / 2)
-      .style('font-size', () => `${Math.round(8 * scaling)}px`)
+      .style('font-size', () => `${Math.round(10 * scaling)}px`)
       .style('font-weight', 'bold')
       .text(d => text_truncate(d.data.label, 11)) // truncate long strings
       // .text(d => d.data.label)
