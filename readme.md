@@ -33,7 +33,3 @@ Optional features:
 * show a legend that matches the content currently displayed in the pie chart
 * trigger a transition on a legend entry when hovering the corresponding pie slice in the chart
 * display labels at the center the pie slices
-
-#### Pie Chart Dimensions
-
-The size of the chart depends on the width of it's div container. The radius (outerRadius) is the difference of the width minus the left and right margins, divided by 2. The height of the svg element is in return calculated from the radius by doubling it and adding the top and bottom margins.
