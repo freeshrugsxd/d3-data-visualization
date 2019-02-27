@@ -2,7 +2,7 @@
 
 <img src="https://d3js.org/logo.svg" align="left">
 
-This project shows my efforts to create data driven visualizations on web pages using JavaScript's D3 (<u>D</u>ata <u>D</u>riven <u>D</u>ocuments) library. My goal is to create reusable, customizable, informative visualizations that are responsive to user interaction and usable in a production environment.
+This project shows my efforts to create data driven visualizations on web pages using JavaScript's D3 (<b>D</b>ata <b>D</b>riven <b>D</b>ocuments) library. My goal is to create reusable, customizable, informative visualizations that are responsive to user interaction and usable in a production environment.
 
 The following topics will be covered over the course of this project:
 
