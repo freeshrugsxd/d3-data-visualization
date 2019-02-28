@@ -4,15 +4,15 @@
 
 This project shows my efforts to create data driven visualizations on web pages using JavaScript's D3 (<b>D</b>ata <b>D</b>riven <b>D</b>ocuments) library. My goal is to create reusable, customizable, informative visualizations that are responsive to user interaction and usable in a production environment.
 
-The following topics will be covered over the course of this project:
+The following types of visualizations will be covered over the course of this project:
 
-* Pie Chart
-* Spatial Data (geoJSON)
+* Pie Charts
+* Spatial Data
 * Time Series
 
 ## Pie Chart
 
-A multi level, drill down pie chart to explore the composition of your nested data set.
+A multi level, drill down pie chart to explore the composition nested data sets.
 
 Features:
 
@@ -24,7 +24,7 @@ Features:
 * a tool tip displays information on currently hovered data subset
 * 9 different color ramps
 
-Some features can be turned on or off at will by setting their values to either <b>true</b> or <b>false</b> in the config.
+Some features can be turned on or off at will by setting their values to either <b>true</b> or <b>false</b> in the config in the main.js file.
 
 Optional features:
 
@@ -32,4 +32,4 @@ Optional features:
 * show a legend that matches the content currently displayed in the pie chart
 * trigger a transition on a legend entry when hovering the corresponding pie slice in the chart
 * display labels at the center the pie slices
-* truncate overly long legend labels ('this_is_a_long_la...') when not hovered
+* truncate overly long legend labels ('This is a long la...') when not hovered

@@ -1,6 +1,6 @@
 function draw_pie(config) {
 
-  let maxRadius    = config.max_radius,        // max outerRadius
+  const maxRadius  = config.max_radius,        // max outerRadius
     minRadius      = config.min_radius,        // min outerRadius
     divClass       = config.div_class,         // class name of div container
     layerClass     = `arc_${divClass}`,        // class name for arc svg elements
@@ -20,12 +20,13 @@ function draw_pie(config) {
     showLabels     = config.labels,            // toggles labels
     showLegend     = config.legend,            // toggles legend
     fancyLegend    = config.fancy_legend,      // toggles legend rectangle transition
-    maxTxtLen      = config.max_txt_len,       // max allowed length of legend text
-    legendFontSize = 11,                       // legend text font size
-    labelFontSize  = 14,                       // label text font size
-    legendScaling  =  1,                       // intitial legend scaling factor
-    rect           = 16,                       // height of legend rectangle
-    spacing        =  5;                       // space between legend entries
+    maxTxtLen      = config.max_txt_len;       // max allowed length of legend text
+
+  let labelFontSize = 14,                      // label text font size
+    legendFontSize  = 11,                      // legend text font size
+    legendScaling   =  1,                      // intitial legend scaling factor
+    rect            = 16,                      // height of legend rectangle
+    spacing         =  5;                      // space between legend entries
 
   $(chartClassSel).html('') // delete all content of container
   $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
@@ -43,25 +44,25 @@ function draw_pie(config) {
   if (showLegend) margin.right = w * 0.4
 
   // pie chart params
-  let outerRadius = (w - margin.left - margin.right) / 2, // pie chart's outer radius
-    innerRadius = 0                                       // pie chart's inner radius
+  const innerRadius = 0;
+  let outerRadius   = (w - margin.left - margin.right) / 2;
 
   outerRadius = Math.max(outerRadius, minRadius)
   outerRadius = Math.min(outerRadius, maxRadius)
 
-  let h = 2 * outerRadius + margin.top + margin.bottom;  // height of svg container
+  const h = 2 * outerRadius + margin.top + margin.bottom;  // height of svg container
 
   // If the width of the div element could contain a larger pie chart but we hit
   // max radius, there will be empty space right next to the chart.
   // Calculate the width of the empty space
-  let hDiff = (w - (outerRadius * 2) - margin.left - margin.right) / 2;
+  const hDiff = (w - (outerRadius * 2) - margin.left - margin.right) / 2;
 
   // apply scaling in case it was set manually to anything else than 1
   rect    = rect * legendScaling
   spacing = spacing * legendScaling
   legendFontSize = legendFontSize * legendScaling
 
-  let colorrange = {
+  const colorrange = {
       blue : ['#045A8D', '#2B8CBE', '#74A9CF', '#A6BDDB', '#D0D1E6', '#F1EEF6'],
     orange : ['#B30000', '#E34A33', '#FC8D59', '#FDBB84', '#FDD49E', '#FEF0D9'],
       pink : ['#980043', '#DD1C77', '#DF65B0', '#C994C7', '#D4B9DA', '#F1EEF6'],
@@ -75,11 +76,11 @@ function draw_pie(config) {
     cat20c : d3.range(20).map(d3.scale.category20c())
   };
 
-  let color = d3.scale.ordinal()
+  const color = d3.scale.ordinal()
     .range(colorrange[config.color]);
 
   // define tooltip (coords are declared later on mouse events)
-  let tooltip = d3.select('body')
+  const tooltip = d3.select('body')
     .append('div')
     .attr('class', ttipClass)
     .style('position', 'absolute')
@@ -104,23 +105,23 @@ function draw_pie(config) {
 //  PIE CHART
 // --------------------------------------------------------- //
 
-  let pie = d3.layout.pie()
+  const pie = d3.layout.pie()
     .sort(null)
     .value(d => d.value);
 
-  let pieData = pie(config.data);
+  const pieData = pie(config.data);
 
-  let arc = d3.svg.arc()
+  const arc = d3.svg.arc()
     .innerRadius(innerRadius)
     .outerRadius(outerRadius);
 
   // bigger outerRadius for mouseover transition
-  let arcOver = d3.svg.arc()
+  const arcOver = d3.svg.arc()
     .innerRadius(innerRadius)
     .outerRadius(outerRadius * 1.05);
 
   // create svg area
-  let svg = d3.selectAll(chartClassSel)
+  const svg = d3.selectAll(chartClassSel)
     .append('svg')
     .attr({id : `${divClass}_svg` , width : w, height : h})
     .append('g')
@@ -136,7 +137,7 @@ function draw_pie(config) {
       config.heading = config.headings[config.currentLevel - 1]
 
     // create heading that displays the current layer's label
-    let heading = svg.append('text')
+    const heading = svg.append('text')
       .text(config.heading)
       .attr('x', () => outerRadius + hDiff)
       .attr('y', - margin.top / 2)
@@ -146,7 +147,7 @@ function draw_pie(config) {
   }
 
   // append a group to svg for every datum in pie(config.data)
-  let arcs = svg.selectAll(layerClassSel)
+  const arcs = svg.selectAll(layerClassSel)
     .data(pieData)
     .enter()
     .append('g')
@@ -178,9 +179,9 @@ function draw_pie(config) {
 
                 // get width of text next to the rectangle
                 // nextSibling of rectangle is always its label
-                let w = d3.select(this.nextSibling).node().getBBox().width;
+                const txtWidth = d3.select(this.nextSibling).node().getBBox().width;
 
-                return rect + w + 2 * spacing
+                return rect + txtWidth + 2 * spacing
               } else {
 
                 return rect
@@ -222,7 +223,7 @@ function draw_pie(config) {
     })
     .on('mouseup', function() {
       // transition back to mouseover size when on deepest level
-      let children = this.__data__.data[config.inner];
+      const children = this.__data__.data[config.inner];
       if (children === undefined) {
         d3.select(this)
           .transition()
@@ -234,7 +235,7 @@ function draw_pie(config) {
     .on('click', function() {
       // drill down one level
       // check for child nodes and set them as config.data
-      let children = this.__data__.data[config.inner];
+      const children = this.__data__.data[config.inner];
       if (children !== undefined) {
         if (showHeading) config.headings.push(this.__data__.data.label)
 
@@ -262,24 +263,24 @@ function draw_pie(config) {
 //  UP BUTTON
 // --------------------------------------------------------- //
 
-  let upBtn = svg.append('g')
+  const upBtn = svg.append('g')
     .attr('class', buttonClass);
 
   // determine initial and regular radius of the up-button circle element
-  let rad = outerRadius / 7,
+  const rad = outerRadius / 7,
     rInit = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
 
-  let btnAttr = {
+  const btnAttr = {
             r : rInit,
          fill : 'green',
     transform : `translate(${outerRadius * 1.9 + hDiff}, 0)`,
         class : buttonClass
   }
 
-  let circ = upBtn.append('circle')
+  const circ = upBtn.append('circle')
     .attr(btnAttr)
 
-  let backTxt = upBtn.append('text')
+  const backTxt = upBtn.append('text')
     .text('BACK')
     .attr('transform', `translate(${outerRadius * 1.9 + hDiff}, ${rad / 8})`)
     .attr('text-anchor', 'middle')
@@ -383,20 +384,20 @@ function draw_pie(config) {
   if (showLegend) {
 
     // feed legend current pie data
-    let legend = svg.selectAll(legendClassSel)
+    const legend = svg.selectAll(legendClassSel)
       .data(pieData)
       .enter()
       .append('g')
       .attr('class', legendClass)
       .attr('transform', function(d, i) {
         // n is the max number of legend entries that fit in the svg vertically
-        let n = Math.floor((h - margin.top - margin.bottom) /
+        const n = Math.floor((h - margin.top - margin.bottom) /
                            (rect + spacing) * legendScaling)
 
         if (pieData.length < n) {
 
           // if all rectangles fit into one column, use only one column
-          let height = rect + spacing,
+          const height = rect + spacing,
             offset   = height * pieData.length,
             dx = w - margin.right,
             dy = (outerRadius - offset / 2) + i * height + spacing;
@@ -417,7 +418,7 @@ function draw_pie(config) {
           }
 
           // height and position for legend entries in two columns
-          let height = rect + spacing,
+          const height = rect + spacing,
             offset   = height * pieData.length,
             dx = (w - margin.right) + (i % 2) * (margin.right / 3),
             dy = (outerRadius - offset / 4) + Math.floor(i / 2) * height + spacing;
@@ -427,7 +428,7 @@ function draw_pie(config) {
     });
 
     // legend rectangle attributes
-    let legendAttrs = {
+    const legendAttrs = {
        width : rect,
       height : rect,
        class : rectClass,
@@ -475,7 +476,7 @@ function draw_pie(config) {
               .transition()
               .duration(250)
               .attr('d', function(d) {
-                let newArc = key == arcLabel ? arcOver : arc;
+                const newArc = key == arcLabel ? arcOver : arc;
                 return newArc(d)
               })
           })
@@ -512,8 +513,8 @@ function draw_pie(config) {
         // grow arc back to mouseover size on mouseup when on deepest level
         arcs.selectAll('path')
           .each(function() {
-            let children = this.__data__.data[config.inner],
-              arcLabel   = this.__data__.data.label;
+            const children = this.__data__.data[config.inner],
+              arcLabel     = this.__data__.data.label;
 
             if (children === undefined) {
               d3.select(this)
@@ -522,7 +523,7 @@ function draw_pie(config) {
                   .duration(150)
                   .attr('d', function(d) {
                     // return invokation of arc constructor function
-                    let newArc = key == arcLabel ? arcOver : arc;
+                    const newArc = key == arcLabel ? arcOver : arc;
                     return newArc(d)
                   })
             }
@@ -531,7 +532,7 @@ function draw_pie(config) {
       .on('click', function() {
         // drill down one level on click
         // check for child nodes and set them as config.data
-        let children = this.__data__.data[config.inner];
+        const children = this.__data__.data[config.inner];
         if (children !== undefined) {
           config.currentLevel++
           config.data    = children
