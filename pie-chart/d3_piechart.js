@@ -1,37 +1,35 @@
 function draw_pie(config) {
 
-  let maxRadius  = config.max_radius,
-    minRadius    = config.min_radius,
-    containerId  = config.containerId,
+  let maxRadius    = config.max_radius,        // max outerRadius
+    minRadius      = config.min_radius,        // min outerRadius
+    divClass       = config.div_class,         // class name of div container
+    layerClass     = `arc_${divClass}`,        // class name for arc svg elements
+    legendClass    = `legend_${divClass}`,     // class name for legend entry group
+    buttonClass    = `up_btn_${divClass}`,     // class name for up-button circle
+    rectClass      = `rect_${divClass}`,       // class name for legend rectangles
+    ttipClass      = `tooltip_${divClass}`,    // class name for tooltip div element
+    chartClassSel  = `.${divClass}`,           // selector for div container
+    layerClassSel  = `.${layerClass}`,         // selector for arc svg elements
+    legendClassSel = `.${legendClass}`,        // selector for legend entry group
+    buttonClassSel = `.${buttonClass}`,        // selector for up-button circle
+    rectClassSel   = `.${rectClass}`,          // selector for legend rectangles
+    ttipClassSel   = `.${ttipClass}`,          // selector for tooltip div element
+    margin         = config.margin,            // margin object
+    w              = $(chartClassSel).width(), // width of div container
+    showHeading    = config.headline,          // toggles headline
+    showLabels     = config.labels,            // toggles labels
+    showLegend     = config.legend,            // toggles legend
+    fancyLegend    = config.fancy_legend,      // toggles legend rectangle transition
+    maxTxtLen      = config.max_txt_len,       // max allowed length of legend text
+    legendFontSize = 12,                       // legend text font size
+    labelFontSize  = 14,                       // label text font size
+    scaling        =  1,                       // intitial legend scaling factor
+    rect           = 16,                       // height of legend rectangle
+    spacing        =  5,                       // space between legend entries
+    hDiff          =  0;                       // empty space when max radius is used
 
-    layer_class  = `arc_${containerId}`,
-    legend_class = `legend_${containerId}`,
-    button_class = `up_btn_${containerId}`,
-    rect_class   = `rect_${containerId}`,
-    ttip_class   = `tooltip_${containerId}`,
-
-    chart_class_sel  = `.${containerId}`,
-    layer_class_sel  = `.${layer_class}`,
-    legend_class_sel = `.${legend_class}`,
-    button_class_sel = `.${button_class}`,
-    rect_class_sel   = `.${rect_class}`,
-    ttip_class_sel   = `.${ttip_class}`,
-
-    suffix = config.suffix == null ? '' : config.suffix,
-    margin = config.margin,
-    w      = $(chart_class_sel).width(),
-
-    showHeading = config.headline,
-    showLabels  = config.labels,
-    showLegend  = config.legend,
-    fancyLegend = config.fancy_legend, // toggles transitions for legend rectangl
-    rect        = 16,  // height of legend entry rectangle
-    spacing     =  5,  // space between legend entries
-    scaling     =  1,  // intitial legend scaling factor
-    hDiff       =  0;  // horizontal difference in case max radius is reached
-
-  $(chart_class_sel).html('') // delete all content of container
-  $(ttip_class_sel).remove()    // remove all leftover tooltips on redraw
+  $(chartClassSel).html('') // delete all content of container
+  $(ttipClassSel).remove()    // remove all leftover tooltips on redraw
 
   // set current level to 0 on first load
   if (!config.currentLevel) config.currentLevel = 0
@@ -49,13 +47,21 @@ function draw_pie(config) {
   let outerRadius = (w - margin.left - margin.right) / 2, // pie chart's outer radius
     innerRadius = 0                                       // pie chart's inner radius
 
+  // when the dimensions of the div container would support a larger pie chart,
+  // but we hit the maximum radius, there will be empty space right next to the chart
   if (outerRadius > maxRadius)
+    // calculate the width of the empty space and use it later to center the chart
     hDiff = (w - (maxRadius * 2) - margin.left - margin.right) / 2
 
   outerRadius = Math.max(outerRadius, minRadius)
   outerRadius = Math.min(outerRadius, maxRadius)
 
   let h = 2 * outerRadius + margin.top + margin.bottom;   // height of svg container
+
+  // apply scaling in case it was set manually to anything else than 1
+  rect    = rect * scaling
+  spacing = spacing * scaling
+  legendFontSize = legendFontSize * scaling
 
   let colorrange = {
       blue : ['#045A8D', '#2B8CBE', '#74A9CF', '#A6BDDB', '#D0D1E6', '#F1EEF6'],
@@ -77,7 +83,7 @@ function draw_pie(config) {
   // define tooltip (coords are declared later on mouse events)
   let tooltip = d3.select('body')
     .append('div')
-    .attr('class', ttip_class)
+    .attr('class', ttipClass)
     .style('position', 'absolute')
     .style('z-index', '20')
     .style('visibility', 'hidden')
@@ -116,9 +122,9 @@ function draw_pie(config) {
     .outerRadius(outerRadius * 1.05);
 
   // create svg area
-  let svg = d3.selectAll(chart_class_sel)
+  let svg = d3.selectAll(chartClassSel)
     .append('svg')
-    .attr({id : `${containerId}_svg` , width : w, height : h})
+    .attr({id : `${divClass}_svg` , width : w, height : h})
     .append('g')
     .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
@@ -142,11 +148,11 @@ function draw_pie(config) {
   }
 
   // append a group to svg for every datum in pie(config.data)
-  let arcs = svg.selectAll(layer_class_sel)
+  let arcs = svg.selectAll(layerClassSel)
     .data(pieData)
     .enter()
     .append('g')
-    .attr('class', layer_class)
+    .attr('class', layerClass)
     .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`);
 
   // generate arcs with mouse events
@@ -166,7 +172,7 @@ function draw_pie(config) {
         // make the legend rectangle transition
         // width of transition depends on length of label text next to it
         key = d.data.label
-        d3.selectAll(rect_class_sel)
+        d3.selectAll(rectClassSel)
           .transition()
             .attr('width', function(d) {
 
@@ -202,7 +208,7 @@ function draw_pie(config) {
           .attr('d', arc)
 
       // transition legend rectangle back to normal size
-      d3.selectAll(rect_class_sel)
+      d3.selectAll(rectClassSel)
         .transition()
           .attr('width', rect)
 
@@ -249,7 +255,7 @@ function draw_pie(config) {
           .attr('transform', d => `translate(${arc.centroid(d)})`)
           .text(d => `${d.data.label}`)
           .attr('text-anchor', 'middle')
-          .style('font-size', '14px')
+          .style('font-size', `${labelFontSize}px`)
           .style('font-weight', 'bold')
           .style('pointer-events', 'none');
 
@@ -259,7 +265,7 @@ function draw_pie(config) {
 // --------------------------------------------------------- //
 
   let upBtn = svg.append('g')
-    .attr('class', button_class);
+    .attr('class', buttonClass);
 
   // determine the initial radius based on current level and direction
   let rad = outerRadius / 7,
@@ -272,7 +278,7 @@ function draw_pie(config) {
             r : rInit,
          fill : 'green',
     transform : `translate(${outerRadius * 1.9 + hDiff}, 0)`,
-        class : button_class
+        class : buttonClass
   }
 
   let circ = upBtn.append('circle')
@@ -382,14 +388,15 @@ function draw_pie(config) {
   if (showLegend) {
 
     // feed legend current pie data
-    let legend = svg.selectAll(legend_class_sel)
+    let legend = svg.selectAll(legendClassSel)
       .data(pieData)
       .enter()
       .append('g')
-      .attr('class', legend_class)
+      .attr('class', legendClass)
       .attr('transform', function(d, i) {
         // n is the max number of legend entries that fit in the svg vertically
-        let n = Math.floor((h - margin.top - margin.bottom) / (rect + spacing))
+        let n = Math.floor((h - margin.top - margin.bottom) /
+                           (rect + spacing) * scaling)
 
         if (pieData.length < n) {
 
@@ -409,10 +416,12 @@ function draw_pie(config) {
             scaling = (h * 2 - margin.top - margin.bottom) /
                       ((rect + spacing) * pieData.length)
 
-            rect    = rect * scaling
-            spacing = spacing * scaling
+            rect     = rect * scaling
+            spacing  = spacing * scaling
+            legendFontSize = Math.round(legendFontSize * scaling)
           }
 
+          // height and position for legend entries in two columns
           let height = rect + spacing,
             offset   = height * pieData.length,
             dx = (w - margin.right) + (i % 2) * (margin.right / 3),
@@ -426,7 +435,7 @@ function draw_pie(config) {
     let legendAttrs = {
        width : rect,
       height : rect,
-       class : rect_class,
+       class : rectClass,
         fill : (d, i) => color(i),
       stroke : (d, i) => color(i)
     };
@@ -437,11 +446,11 @@ function draw_pie(config) {
     // add legend entry labels
     legendText = legend.append('text')
       .attr('x', legendAttrs.width + spacing)
-      .attr('y', (legendAttrs.height + 1.5 * spacing) / 2)
-      .style('font-size', () => `${Math.round(10 * scaling)}px`)
+      .attr('y', `${0.5 * legendAttrs.height + legendFontSize/3}px`)
+      .style('font-size', () => `${legendFontSize}px`)
       .style('font-weight', 'bold')
-      .text(d => text_truncate(d.data.label, 11)) // truncate long strings
-      // .text(d => d.data.label)
+      // .style('text-align', 'center')
+      .text(d => text_truncate(d.data.label, maxTxtLen)) // truncate long strings
 
     // show full label on hover
     legendText.on('mouseover', function() {
@@ -451,7 +460,7 @@ function draw_pie(config) {
     // truncate long strings again on mouseout
     .on('mouseout', function() {
       d3.select(this)
-        .text(d => text_truncate(d.data.label, 11))
+        .text(d => text_truncate(d.data.label, maxTxtLen))
     })
 
     // let legend entries behave like arcs when hovering and clicking
@@ -459,10 +468,10 @@ function draw_pie(config) {
       .on('mouseover', function(d) {
         // show tooltip at cursor position and make it clickthrough
         tooltip.html(d.data.tooltip)
-          .style('top',  `${d3.event.pageY + 15}px`)
-          .style('left', `${d3.event.pageX - 50}px`)
-          .style('pointer-events', 'none')
-          .style('visibility', 'visible')
+          .style('top',  `${d3.event.pageY + 15}px`)  // slightly down
+          .style('left', `${d3.event.pageX - 50}px`)  // slightly to the right
+          .style('pointer-events', 'none')            // make clickthrough
+          .style('visibility', 'visible')             // show tooltip
 
         key = d.data.label
         arcs.selectAll('path')
@@ -480,8 +489,8 @@ function draw_pie(config) {
       .on('mousemove', function(d){
         // show tooltip at cursor position and make it clickthrough
         tooltip.html(d.data.tooltip)
-          .style('top',  `${d3.event.pageY + 15}px`)
-          .style('left', `${d3.event.pageX + 10}px`)
+          .style('top',  `${d3.event.pageY + 15}px`)  // slightly down
+          .style('left', `${d3.event.pageX + 10}px`)  // slightly to the right
           .style('pointer-events', 'none')
           .style('visibility', 'visible')
       })
@@ -546,6 +555,6 @@ function draw_pie(config) {
 
 text_truncate = function(str, length) {
   if (length === null) length = 15;
-  if (str.length > length) return `${str.substring(0, length - 3)}...`
+  if (str.length >= length) return `${str.substring(0, length - 3)}...`
   else return str;
 }
