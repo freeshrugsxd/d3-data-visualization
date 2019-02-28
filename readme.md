@@ -23,7 +23,6 @@ Features:
 * hover and click transitions make the chart feel responsive
 * a tool tip displays information on currently hovered data subset
 * 9 different color ramps
-* overly long labels are truncated ("this_is_a_long_la...") but shown in full when hovered
 
 Some features can be turned on or off at will by setting their values to either <b>true</b> or <b>false</b> in the config.
 
@@ -33,3 +32,4 @@ Optional features:
 * show a legend that matches the content currently displayed in the pie chart
 * trigger a transition on a legend entry when hovering the corresponding pie slice in the chart
 * display labels at the center the pie slices
+* truncate overly long legend labels ('this_is_a_long_la...') when not hovered

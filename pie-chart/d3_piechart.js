@@ -21,15 +21,14 @@ function draw_pie(config) {
     showLegend     = config.legend,            // toggles legend
     fancyLegend    = config.fancy_legend,      // toggles legend rectangle transition
     maxTxtLen      = config.max_txt_len,       // max allowed length of legend text
-    legendFontSize = 12,                       // legend text font size
+    legendFontSize = 11,                       // legend text font size
     labelFontSize  = 14,                       // label text font size
-    scaling        =  1,                       // intitial legend scaling factor
+    legendScaling  =  1,                       // intitial legend scaling factor
     rect           = 16,                       // height of legend rectangle
-    spacing        =  5,                       // space between legend entries
-    hDiff          =  0;                       // empty space when max radius is used
+    spacing        =  5;                       // space between legend entries
 
   $(chartClassSel).html('') // delete all content of container
-  $(ttipClassSel).remove()    // remove all leftover tooltips on redraw
+  $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
 
   // set current level to 0 on first load
   if (!config.currentLevel) config.currentLevel = 0
@@ -47,21 +46,20 @@ function draw_pie(config) {
   let outerRadius = (w - margin.left - margin.right) / 2, // pie chart's outer radius
     innerRadius = 0                                       // pie chart's inner radius
 
-  // when the dimensions of the div container would support a larger pie chart,
-  // but we hit the maximum radius, there will be empty space right next to the chart
-  if (outerRadius > maxRadius)
-    // calculate the width of the empty space and use it later to center the chart
-    hDiff = (w - (maxRadius * 2) - margin.left - margin.right) / 2
-
   outerRadius = Math.max(outerRadius, minRadius)
   outerRadius = Math.min(outerRadius, maxRadius)
 
-  let h = 2 * outerRadius + margin.top + margin.bottom;   // height of svg container
+  let h = 2 * outerRadius + margin.top + margin.bottom;  // height of svg container
+
+  // If the width of the div element could contain a larger pie chart but we hit
+  // max radius, there will be empty space right next to the chart.
+  // Calculate the width of the empty space
+  let hDiff = (w - (outerRadius * 2) - margin.left - margin.right) / 2;
 
   // apply scaling in case it was set manually to anything else than 1
-  rect    = rect * scaling
-  spacing = spacing * scaling
-  legendFontSize = legendFontSize * scaling
+  rect    = rect * legendScaling
+  spacing = spacing * legendScaling
+  legendFontSize = legendFontSize * legendScaling
 
   let colorrange = {
       blue : ['#045A8D', '#2B8CBE', '#74A9CF', '#A6BDDB', '#D0D1E6', '#F1EEF6'],
@@ -267,11 +265,8 @@ function draw_pie(config) {
   let upBtn = svg.append('g')
     .attr('class', buttonClass);
 
-  // determine the initial radius based on current level and direction
+  // determine initial and regular radius of the up-button circle element
   let rad = outerRadius / 7,
-    // set initial radius based on direction and current level
-    // a radius of 0 is needed for the "pop up" transition on level 1
-    // and for the circle to stay hidden when chart is initialized
     rInit = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
 
   let btnAttr = {
@@ -286,7 +281,7 @@ function draw_pie(config) {
 
   let backTxt = upBtn.append('text')
     .text('BACK')
-    .attr('transform', `translate(${outerRadius * 1.9 + hDiff}, ${rad/8})`)
+    .attr('transform', `translate(${outerRadius * 1.9 + hDiff}, ${rad / 8})`)
     .attr('text-anchor', 'middle')
     .style('fill', 'white')
     .style('font-size', `${rInit / 2}px`)
@@ -396,7 +391,7 @@ function draw_pie(config) {
       .attr('transform', function(d, i) {
         // n is the max number of legend entries that fit in the svg vertically
         let n = Math.floor((h - margin.top - margin.bottom) /
-                           (rect + spacing) * scaling)
+                           (rect + spacing) * legendScaling)
 
         if (pieData.length < n) {
 
@@ -413,12 +408,12 @@ function draw_pie(config) {
           if (((rect + spacing) * pieData.length) > h * 2) {
 
             // scale down the legend if there are too many rectangles for two cols
-            scaling = (h * 2 - margin.top - margin.bottom) /
-                      ((rect + spacing) * pieData.length)
+            legendScaling = (h * 2 - margin.top - margin.bottom) /
+                            ((rect + spacing) * pieData.length)
 
-            rect     = rect * scaling
-            spacing  = spacing * scaling
-            legendFontSize = Math.round(legendFontSize * scaling)
+            rect     = rect * legendScaling
+            spacing  = spacing * legendScaling
+            legendFontSize = Math.round(legendFontSize * legendScaling)
           }
 
           // height and position for legend entries in two columns
@@ -446,10 +441,9 @@ function draw_pie(config) {
     // add legend entry labels
     legendText = legend.append('text')
       .attr('x', legendAttrs.width + spacing)
-      .attr('y', `${0.5 * legendAttrs.height + legendFontSize/3}px`)
+      .attr('y', `${legendAttrs.height / 2 + legendFontSize / 3}px`)
       .style('font-size', () => `${legendFontSize}px`)
       .style('font-weight', 'bold')
-      // .style('text-align', 'center')
       .text(d => text_truncate(d.data.label, maxTxtLen)) // truncate long strings
 
     // show full label on hover
