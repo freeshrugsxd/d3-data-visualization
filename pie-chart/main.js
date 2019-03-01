@@ -7,7 +7,7 @@ let pie_area = (function(){
         min_radius : 50,           // pie chart's min outer radius
              inner : 'children',   // name of data set's child nodes
          div_class : 'pie-chart',  // class of the div container holding the chart
-       max_txt_len : null,         // max allowed legend entry text before truncation
+       max_txt_len : 15,           // max allowed legend entry text before truncation
           headline : false,        // shows the name of current level above the chart
             labels : false,        // shows name of child nodes inside the pie slices
             legend : false,        // display a legend next to the pie chart
@@ -47,7 +47,7 @@ let pie_area = (function(){
         config_array[2].div_class    = 'drill-down-pie-chart-3'
         config_array[2].labels       = true
         config_array[2].legend       = true
-        config_array[2].max_txt_len  = 12
+        config_array[2].max_txt_len  = null  // set null for no truncation
         config_array[2].color        = 'green'
 
         redraw()

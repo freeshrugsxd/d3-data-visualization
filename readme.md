@@ -10,7 +10,7 @@ The following types of visualizations will be covered over the course of this pr
 * Spatial Data
 * Time Series
 
-## Pie Chart
+## Pie Chart Summary
 
 A multi level, drill down pie chart to explore the composition nested data sets.
 

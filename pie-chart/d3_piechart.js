@@ -22,11 +22,11 @@ function draw_pie(config) {
     fancyLegend    = config.fancy_legend,      // toggles legend rectangle transition
     maxTxtLen      = config.max_txt_len;       // max allowed length of legend text
 
-  let labelFontSize = 14,                      // label text font size
-    legendFontSize  = 11,                      // legend text font size
-    legendScaling   =  1,                      // intitial legend scaling factor
-    rect            = 16,                      // height of legend rectangle
-    spacing         =  5;                      // space between legend entries
+  let labelFontSize = 14,  // label text font size
+    legendFontSize  = 11,  // legend text font size
+    legendScaling   =  1,  // intitial legend scaling factor
+    rect            = 16,  // height of legend rectangle
+    spacing         =  5;  // space between legend entries
 
   $(chartClassSel).html('') // delete all content of container
   $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
@@ -41,7 +41,7 @@ function draw_pie(config) {
   }
 
   // increase right margin if legend is shown
-  if (showLegend) margin.right = w * 0.4
+  if (showLegend) margin.right = w * 0.45
 
   // pie chart params
   const innerRadius = 0;
@@ -530,7 +530,7 @@ function draw_pie(config) {
           })
       })
       .on('click', function() {
-        // drill down one level on click
+        // drill down one level
         // check for child nodes and set them as config.data
         const children = this.__data__.data[config.inner];
         if (children !== undefined) {
@@ -549,7 +549,7 @@ function draw_pie(config) {
 }
 
 text_truncate = function(str, length) {
-  if (length === null) length = 15;
-  if (str.length >= length) return `${str.substring(0, length - 3)}...`
+  if (length === null) return str;
+  if (str.length >= length) return `${str.substring(0, length - 3)}...`;
   else return str;
 }
