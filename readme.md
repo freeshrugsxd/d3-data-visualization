@@ -12,7 +12,7 @@ The following types of visualizations will be covered over the course of this pr
 
 ## Pie Chart Summary
 
-A multi level, drill down pie chart to explore the composition nested data sets.
+A multi level, drill down pie chart to explore the composition of nested data sets.
 
 Features:
 

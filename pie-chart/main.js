@@ -3,8 +3,8 @@ let pie_area = (function(){
 
     // create configuration template object that holds the settings' default values
     let config_template  = {
-        max_radius : 300,          // pie chart's max outer radius
-        min_radius : 50,           // pie chart's min outer radius
+        max_radius : 300,          // pie chart's maximum outer radius
+        min_radius : 50,           // pie chart's minimum outer radius
              inner : 'children',   // name of data set's child nodes
          div_class : 'pie-chart',  // class of the div container holding the chart
        max_txt_len : 15,           // max allowed legend entry text before truncation
@@ -34,6 +34,8 @@ let pie_area = (function(){
         config_array[0].headline     = true
         config_array[0].legend       = true
         config_array[0].fancy_legend = true
+        config_array[0].labels       = true
+
         config_array[0].max_txt_len  = 13
         config_array[0].color        = 'cat20'
 
