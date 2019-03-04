@@ -34,8 +34,6 @@ let pie_area = (function(){
         config_array[0].headline     = true
         config_array[0].legend       = true
         config_array[0].fancy_legend = true
-        config_array[0].labels       = true
-
         config_array[0].max_txt_len  = 13
         config_array[0].color        = 'cat20'
 
