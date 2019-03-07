@@ -3,13 +3,15 @@ function draw_pie(config) {
   const maxRadius  = config.max_radius,        // max outerRadius
     minRadius      = config.min_radius,        // min outerRadius
     divClass       = config.div_class,         // class name of div container
-    layerClass     = `arc_${divClass}`,        // class name for arc svg elements
+    arcClass       = `arc_${divClass}`,        // class name for arc path elements
+    arcGrpClass    = `g_${arcClass}`,          // class name for arc group elements
     legendClass    = `legend_${divClass}`,     // class name for legend entry group
     buttonClass    = `up_btn_${divClass}`,     // class name for up-button circle
     rectClass      = `rect_${divClass}`,       // class name for legend rectangles
     ttipClass      = `tooltip_${divClass}`,    // class name for tooltip div element
     chartClassSel  = `.${divClass}`,           // selector for div container
-    layerClassSel  = `.${layerClass}`,         // selector for arc svg elements
+    arcClassSel    = `.${arcClass}`,           // selector for arc path elements
+    arcGrpClassSel = `.${arcGrpClass}`,        // selector for arc group elements
     legendClassSel = `.${legendClass}`,        // selector for legend entry group
     buttonClassSel = `.${buttonClass}`,        // selector for up-button circle
     rectClassSel   = `.${rectClass}`,          // selector for legend rectangles
@@ -146,90 +148,121 @@ function draw_pie(config) {
       .style('font-weight', 'bold');
   }
 
-  // append a group to svg for every datum in pie(config.data)
-  const arcs = svg.selectAll(layerClassSel)
-    .data(pieData)
-    .enter()
-    .append('g')
-    .attr('class', layerClass)
-    .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`);
+  // create circle as backdrop for the chart
+  let background = svg.append('circle')
+    .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`)
+    .attr('r', outerRadius)
+    .attr('fill', (d, i) => color(i))
+    .attr('opacity', 0.2)
 
-  // generate arcs with mouse events
-  arcs.append('path')
+  // append a group to svg for every datum in pie(config.data)
+  let arcs = svg.append('g')
+    .attr('class', arcGrpClass)
+
+  let paths = arcs.selectAll(arcClassSel)
+    .data(pieData)
+
+  paths.enter()
+    .append('path')
     .attr('d', arc)
+    .attr('class', arcClass)
+    .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`)
     .attr('fill', (d, i) => color(i))
     .style('stroke', 'white')
-    .on('mouseover', function(d){
+    .each(() => this._pointerEvents = false);
+
+  paths.transition()
+    .duration(600)
+    .attrTween('d', tweenIn)
+    .each('end', function() {this._pointerEvents = true})
+
+  paths.on('mouseover', function(d){
+      if (this._pointerEvents) {
       // grow on mouseover
-      d3.select(this)
-        .transition()
-          .duration(125)
-          .ease('in')
-          .attr('d', arcOver)
-
-      if (fancyLegend) {
-        // make the legend rectangle transition
-        // width of transition depends on length of label text next to it
-        key = d.data.label
-        d3.selectAll(rectClassSel)
+        d3.select(this)
           .transition()
-            .attr('width', function(d) {
+            .duration(125)
+            .ease('in')
+            .attr('d', arcOver)
 
-              if (d.data.label == key) {
+        if (fancyLegend) {
+          // make the legend rectangle transition
+          // width of transition depends on length of label text next to it
+          key = d.data.label
+          d3.selectAll(rectClassSel)
+            .transition()
+              .attr('width', function(d) {
 
-                // get width of text next to the rectangle
-                // nextSibling of rectangle is always its label
-                const txtWidth = d3.select(this.nextSibling).node().getBBox().width;
+                if (d.data.label == key) {
 
-                return rect + txtWidth + 2 * spacing
-              } else {
+                  // get width of text next to the rectangle
+                  // nextSibling of rectangle is always its label
+                  const w = d3.select(this.nextSibling).node().getBBox().width;
 
-                return rect
-              }
-            })
+                  return rect + w + 2 * spacing
+                } else {
+
+                  return rect
+                }
+              })
+        }
       }
     })
     .on('mousemove', function(d) {
-      // show tooltip at cursor position and make it clickthrough
-      tooltip.html(d.data.tooltip)
-        .style('top',  `${d3.event.pageY + 15}px`)
-        .style('left', `${d3.event.pageX + 10}px`)
-        .style('pointer-events', 'none')
-        .style('visibility', 'visible')
+      if (this._pointerEvents) {
+        // grow on mousemove
+        d3.select(this)
+          .transition()
+            .duration(125)
+            .ease('in')
+            .attr('d', arcOver)
+        // show tooltip at cursor position and make it clickthrough
+        tooltip.html(d.data.tooltip)
+          .style('top',  `${d3.event.pageY + 15}px`)
+          .style('left', `${d3.event.pageX + 10}px`)
+          .style('pointer-events', 'none')
+          .style('visibility', 'visible')
+        }
     })
     .on('mouseout', function() {
-      // transition arc to normal size
-      d3.select(this)
-        .transition()
-          .ease('out')
-          .delay(100)
-          .duration(150)
-          .attr('d', arc)
-
-      // transition legend rectangle back to normal size
-      d3.selectAll(rectClassSel)
-        .transition()
-          .attr('width', rect)
-
-      // hide tooltip and remove its content
-      tooltip.html('').style('visibility', 'hidden');
-    })
-    .on('mousedown', function() {
-      // transition arc back to normal size
-      d3.select(this)
-        .transition()
-          .ease('bounce')
-          .attr('d', arc)
-    })
-    .on('mouseup', function() {
-      // transition back to mouseover size when on deepest level
-      const children = this.__data__.data[config.inner];
-      if (children === undefined) {
+      if (this._pointerEvents) {
+        // transition arc to normal size
         d3.select(this)
           .transition()
             .ease('out')
+            .delay(100)
             .duration(150)
-            .attr('d', arcOver)
+            .attr('d', arc)
+
+        // transition legend rectangle back to normal size
+        d3.selectAll(rectClassSel)
+          .transition()
+            .attr('width', rect)
+
+        // hide tooltip and remove its content
+        tooltip.html('').style('visibility', 'hidden');
+      }
+    })
+    .on('mousedown', function() {
+      if (this._pointerEvents) {
+        // transition arc back to normal size
+        d3.select(this)
+          .transition()
+            .ease('bounce')
+            .attr('d', arc)
+      }
+    })
+    .on('mouseup', function() {
+      if (this._pointerEvents) {
+        // transition back to mouseover size when on deepest level
+        const children = this.__data__.data[config.inner];
+        if (children === undefined) {
+          d3.select(this)
+            .transition()
+              .ease('out')
+              .duration(150)
+              .attr('d', arcOver)
+        }
       }
     })
     .on('click', function() {
@@ -243,20 +276,20 @@ function draw_pie(config) {
         config.data    = children
         config.goingUp = false
         config.history.push(children)
-
+        this._pointerEvents = true
         draw_pie(config)
       }
     });
 
-  if (showLabels)
-      // create the labels at the centroids of arcs
-      arcs.append('text')
-          .attr('transform', d => `translate(${arc.centroid(d)})`)
-          .text(d => `${d.data.label}`)
-          .attr('text-anchor', 'middle')
-          .style('font-size', `${labelFontSize}px`)
-          .style('font-weight', 'bold')
-          .style('pointer-events', 'none');
+  // if (showLabels)
+  //     // create the labels at the centroids of arcs
+  //     arcs.append('text')
+  //         .attr('transform', d => `translate(${arc.centroid(d)})`)
+  //         .text(d => `${d.data.label}`)
+  //         .attr('text-anchor', 'middle')
+  //         .style('font-size', `${labelFontSize}px`)
+  //         .style('font-weight', 'bold')
+  //         .style('pointer-events', 'none');
 
 
 // --------------------------------------------------------- //
@@ -469,8 +502,8 @@ function draw_pie(config) {
           .style('visibility', 'visible')             // show tooltip
 
         key = d.data.label
-        arcs.selectAll('path')
-          .each(function() {
+        paths.each(function() {
+          if (this._pointerEvents) {
             arcLabel = this.__data__.data.label
             d3.select(this)
               .transition()
@@ -479,6 +512,7 @@ function draw_pie(config) {
                 const newArc = key == arcLabel ? arcOver : arc;
                 return newArc(d)
               })
+            }
           })
       })
       .on('mousemove', function(d){
@@ -490,29 +524,33 @@ function draw_pie(config) {
           .style('visibility', 'visible')
       })
       .on('mouseout', function() {
-        arcs.selectAll('path')
-          .transition()
-            .ease('out')
-            .attr('d', arc)
-
+        paths.each(function() {
+          if (this._pointerEvents) {
+            d3.select(this)
+              .transition()
+              .ease('out')
+              .attr('d', arc)
+            }
+        })
         // hide tooltip and remove its content
         tooltip.html('').style('visibility', 'hidden');
       })
       .on('mousedown', function() {
         // shrink arc back to normal when left button is pressed
-        arcs.selectAll('path')
-          .each(function() {
+        paths.each(function() {
+          if (this._pointerEvents) {
             d3.select(this)
               .transition()
                 .ease('bounce')
                 .attr('d', arc)
-          })
+          }
+        })
       })
       .on('mouseup', function(d) {
         key = d.data.label
         // grow arc back to mouseover size on mouseup when on deepest level
-        arcs.selectAll('path')
-          .each(function() {
+        paths.each(function() {
+          if (this._pointerEvents) {
             const children = this.__data__.data[config.inner],
               arcLabel     = this.__data__.data.label;
 
@@ -527,7 +565,8 @@ function draw_pie(config) {
                     return newArc(d)
                   })
             }
-          })
+          }
+        })
       })
       .on('click', function() {
         // drill down one level
@@ -540,12 +579,21 @@ function draw_pie(config) {
           config.history.push(children)
 
           if (showHeading) config.headings.push(this.__data__.data.label)
+          this._pointerEvents = true
 
           draw_pie(config)
         }
       });
-  }
 
+
+  }
+    function tweenIn(d) {
+      let i = d3.interpolate({startAngle: 0, endAngle: 0}, d);
+      this._current = i(0);
+      return function(t) {
+          return arc(i(t));
+      };
+    }
 }
 
 text_truncate = function(str, length) {

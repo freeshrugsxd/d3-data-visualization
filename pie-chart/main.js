@@ -48,7 +48,7 @@ let pie_area = (function(){
         config_array[2].labels       = true
         config_array[2].legend       = true
         config_array[2].max_txt_len  = null  // set null for no truncation
-        config_array[2].color        = 'green'
+        config_array[2].color        = 'nature'
 
         redraw()
     }
