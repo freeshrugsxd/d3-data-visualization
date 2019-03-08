@@ -26,6 +26,7 @@ let pie_area = (function(){
     config_array.push(jQuery.extend(true, {}, config_template))  // one copy for each
     config_array.push(jQuery.extend(true, {}, config_template))  // chart that is to
     config_array.push(jQuery.extend(true, {}, config_template))  // be displayed
+    config_array.push(jQuery.extend(true, {}, config_template))
 
     function init(json) {
         // add data and specify configuration for each chart
@@ -42,13 +43,22 @@ let pie_area = (function(){
         config_array[1].headline     = true
         config_array[1].labels       = true
         config_array[1].color        = 'pink'
+        config_array[1].label_size   = 14
 
-        config_array[2].data         = json.n_prod
+        config_array[2].data         = json.my_test_data
         config_array[2].div_class    = 'drill-down-pie-chart-3'
         config_array[2].labels       = true
         config_array[2].legend       = true
-        config_array[2].max_txt_len  = null  // set null for no truncation
-        config_array[2].color        = 'nature'
+        config_array[2].color        = 'cat10'
+
+        config_array[3].data         = json.n_prod
+        config_array[3].div_class    = 'drill-down-pie-chart-4'
+        config_array[3].headline     = true,
+        config_array[3].labels       = true,
+        config_array[3].legend       = true,
+        config_array[3].fancy_legend = true,
+        config_array[3].label_size   = 13,
+        config_array[3].color        = 'nature'
 
         redraw()
     }

@@ -1,72 +1,57 @@
 function draw_pie(config) {
 
-  const maxRadius  = config.max_radius,        // max outerRadius
-    minRadius      = config.min_radius,        // min outerRadius
-    divClass       = config.div_class,         // class name of div container
-    arcClass       = `arc_${divClass}`,        // class name for arc path elements
-    arcGrpClass    = `g_${arcClass}`,          // class name for arc group elements
-    legendClass    = `legend_${divClass}`,     // class name for legend entry group
-    buttonClass    = `up_btn_${divClass}`,     // class name for up-button circle
-    rectClass      = `rect_${divClass}`,       // class name for legend rectangles
-    ttipClass      = `tooltip_${divClass}`,    // class name for tooltip div element
-    chartClassSel  = `.${divClass}`,           // selector for div container
-    arcClassSel    = `.${arcClass}`,           // selector for arc path elements
-    arcGrpClassSel = `.${arcGrpClass}`,        // selector for arc group elements
-    legendClassSel = `.${legendClass}`,        // selector for legend entry group
-    buttonClassSel = `.${buttonClass}`,        // selector for up-button circle
-    rectClassSel   = `.${rectClass}`,          // selector for legend rectangles
-    ttipClassSel   = `.${ttipClass}`,          // selector for tooltip div element
-    margin         = config.margin,            // margin object
-    w              = $(chartClassSel).width(), // width of div container
-    showHeading    = config.headline,          // toggles headline
-    showLabels     = config.labels,            // toggles labels
-    showLegend     = config.legend,            // toggles legend
-    fancyLegend    = config.fancy_legend,      // toggles legend rectangle transition
-    maxTxtLen      = config.max_txt_len;       // max allowed length of legend text
+  const maxRadius  = config.max_radius,  // max outerRadius
+    minRadius      = config.min_radius,  // min outerRadius
+
+    divClass    = config.div_class,      // class name of div container
+    arcClass    = `arc_${divClass}`,     // class name for arc path elements
+    arcGrpClass = `g_${arcClass}`,       // class name for arc group elements
+    buttonClass = `up_btn_${divClass}`,  // class name for up-button circle
+    labelClass  = `label_${divClass}`,   // class name for label group element
+    legendClass = `legend_${divClass}`,  // class name for legend entry group
+    rectClass   = `rect_${divClass}`,    // class name for legend rectangles
+    ttipClass   = `tooltip_${divClass}`, // class name for tooltip div element
+
+    arcClassSel    = `.${arcClass}`,     // selector for arc path elements
+    arcGrpClassSel = `.${arcGrpClass}`,  // selector for arc group elements
+    buttonClassSel = `.${buttonClass}`,  // selector for up-button circle
+    chartClassSel  = `.${divClass}`,     // selector for div container
+    labelClassSel  = `.${labelClass}`,   // selector for label group element
+    legendClassSel = `.${legendClass}`,  // selector for legend entry group
+    rectClassSel   = `.${rectClass}`,    // selector for legend rectangles
+    ttipClassSel   = `.${ttipClass}`,    // selector for tooltip div element
+
+    margin        = config.margin,       // margin object
+    showHeading   = config.headline,     // toggles headline
+    showLabels    = config.labels,       // toggles labels
+    showLegend    = config.legend,       // toggles legend
+    fancyLegend   = config.fancy_legend, // toggles legend rectangle transition
+
+    maxTxtLen     = config.max_txt_len || null,  // max allowed length of legend text
+    labelFontSize = config.label_size  || 12,
+
+    w = $(chartClassSel).width(), // width of div container
+    duration = 600,  // duration for main transitions (tweenIn/tweenOut/labels...)
+    key = d => d.data.label;
 
   // initial declaration of legend params
-  let initialLegendScaling =  1,
-    initialLegendSpacing   =  5,
-    initialLegendFontSize  = 11,
-    initialLegendRectSize  = 16;
-
-  config.rectSize = initialLegendRectSize
-  config.spacing  = initialLegendSpacing
-  config.fontSize = initialLegendFontSize
-  config.scaling  = initialLegendScaling
+  let initialLegendScaling =  1,  // intitial legend scaling factor
+    initialLegendSpacing   =  5,  // space between legend entries
+    initialLegendFontSize  = 10,  // legend text font size
+    initialLegendRectSize  = 15;  // height of legend rectangle
 
   $(chartClassSel).html('') // delete all content of container
   $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
 
-  // set current level to 0 on first load
-  if (!config.currentLevel) config.currentLevel = 0
-
-  // create empty array to store breadcrumbs
-  if (config.currentLevel === 0 && !config.history) {
-    config.history = []
-    config.history.push(config.data)
-  }
-
-  // increase right margin if legend is shown
-  if (showLegend) margin.right = w * 0.45
-
-  // pie chart params
-  const innerRadius = 0;
-  let outerRadius   = (w - margin.left - margin.right) / 2;
-
-  outerRadius = Math.max(outerRadius, minRadius)
-  outerRadius = Math.min(outerRadius, maxRadius)
-
-  const h = 2 * outerRadius + margin.top + margin.bottom;  // height of svg container
-
-  // If the width of the div element could contain a larger pie chart but we hit
-  // max radius, there will be empty space right next to the chart.
-  // Calculate the width of the empty space
-  const hDiff = (w - (outerRadius * 2) - margin.left - margin.right) / 2;
+  // store initial legend params inside config
+  config.scaling  = initialLegendScaling
+  config.rectSize = initialLegendRectSize
+  config.spacing  = initialLegendSpacing
+  config.fontSize = initialLegendFontSize
 
   // apply scaling in case it was set manually to anything else than 1
   config.rectSize = config.rectSize * config.scaling
-  config.spacing = config.spacing * config.scaling
+  config.spacing  = config.spacing  * config.scaling
   config.fontSize = config.fontSize * config.scaling
 
   const colorrange = {
@@ -86,21 +71,51 @@ function draw_pie(config) {
   const color = d3.scale.ordinal()
     .range(colorrange[config.color]);
 
+  // set current level to 0 on first load
+  if (!config.currentLevel) config.currentLevel = 0
+
+  // create empty array to store breadcrumbs
+  if (config.currentLevel === 0 && !config.history) {
+    config.history = []
+    config.history.push(config.data)
+  }
+
+  // increase right margin if legend is shown
+  if (showLegend) margin.right = w * 0.45
+
+  // increase left and right margins if outside labels are shown
+  if (showLabels) {
+    margin.left  = Math.max(0.2 * w, margin.left)
+    margin.right = Math.max(0.2 * w, margin.right)
+  }
+
+  // pie chart params
+  const innerRadius = 0;
+  let outerRadius   = (w - margin.left - margin.right) / 2;
+
+  outerRadius = Math.max(outerRadius, minRadius)
+  outerRadius = Math.min(outerRadius, maxRadius)
+
+  const h = 2 * outerRadius + margin.top + margin.bottom;  // height of svg container
+
+  // calculate amount of empty horizontal space, half it to center the pie chart
+  const hDiff = (w - (outerRadius * 2) - margin.left - margin.right) / 2;
+
   // define tooltip (coords are declared later on mouse events)
   const tooltip = d3.select('body')
     .append('div')
-    .attr('class', ttipClass)
-    .style('position', 'absolute')
-    .style('z-index', '20')
-    .style('visibility', 'hidden')
-    .style('font-weight', 'bold')
-    .style('font-size', '10px')
-    .style('color', '#000')
-    .style('line-height', 1)
-    .style('padding', '5px')
-    .style('background', '#fff')
-    .style('border-radius', '2px')
-    .style('opacity', 0.8);
+      .attr('class', ttipClass)
+      .style('position', 'absolute')
+      .style('z-index', '20')
+      .style('visibility', 'hidden')
+      .style('font-weight', 'bold')
+      .style('font-size', '10px')
+      .style('color', '#000')
+      .style('line-height', 1)
+      .style('padding', '5px')
+      .style('background', '#fff')
+      .style('border-radius', '2px')
+      .style('opacity', 0.8);
 
   // set initial direction
   if (config.goingUp === undefined) config.goingUp = false
@@ -112,12 +127,16 @@ function draw_pie(config) {
 //  PIE CHART
 // --------------------------------------------------------- //
 
+  // declare some variables that we dont want to execute every update
+
+  // pie chart constructor function
   const pie = d3.layout.pie()
-    .sort(null)
+    .sort(null)  // do not sort the slices
     .value(d => d.value);
 
   let pieData = pie(config.data);
 
+  // standard arc generator
   const arc = d3.svg.arc()
     .innerRadius(innerRadius)
     .outerRadius(outerRadius);
@@ -130,23 +149,27 @@ function draw_pie(config) {
   // create svg area
   const svg = d3.selectAll(chartClassSel)
     .append('svg')
-    .attr({id : `${divClass}_svg` , width : w, height : h})
+      .attr({id : `${divClass}_svg` , width : w, height : h})
     .append('g')
-    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+      .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
   // create circle as backdrop for the chart
-  let background = svg.append('circle')
+  const background = svg.append('circle')
     .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`)
     .attr('r', outerRadius)
     .attr('fill', (d, i) => color(i))
     .attr('opacity', 0.2)
 
-  // append a group to svg for every datum in pie(config.data)
+  // group for labels
+  const labels = svg.append('g')
+    .attr('class', labelClass)
+
+  // group for pie slices
   let arcs = svg.append('g')
     .attr('class', arcGrpClass)
 
   function update(config) {
-    // update the chart with the current data set
+    // update the chart with the current data (sub)set
     // legend and up button constructor functions are called at the bottom
 
     // redeclare starting values for legend parameters
@@ -157,7 +180,7 @@ function draw_pie(config) {
 
     pieData = pie(config.data)
     let paths = arcs.selectAll(arcClassSel)
-      .data(pieData, d => d.data.label)
+      .data(pieData, key)
 
     paths.enter()
       .append('path')
@@ -166,127 +189,126 @@ function draw_pie(config) {
       .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`)
       .attr('fill', (d, i) => color(i))
       .style('stroke', 'white')
-      .each(function() {this._pointerEvents = false})
-      .each(function(d) {this._current = d});
+      .each(function( ) { this._pointerEvents = false })
+      .each(function(d) { this._current = d });
 
     paths.transition()
-      .duration(600)
+      .duration(duration)
       .attrTween('d', tweenIn)
-      .each('end', function() {this._pointerEvents = true})
+      .each('end', function() { this._pointerEvents = true })
 
-    paths.on('mouseover', function(d, i){
-        if (this._pointerEvents) {
-        // grow on mouseover
-          d3.select(this)
+    paths.on('mouseover', function(d) {
+      if (this._pointerEvents) {
+      // grow on mouseover
+        d3.select(this)
+          .transition()
+            .duration(125)
+            .ease('in')
+            .attr('d', arcOver)
+
+        if (fancyLegend) {
+          // make the legend rectangle transition
+          // width of transition depends on length of label text next to it
+          let key = d.data.label;
+          d3.selectAll(rectClassSel)
             .transition()
-              .duration(125)
-              .ease('in')
-              .attr('d', arcOver)
+              .attr('width', function(d) {
 
-          if (fancyLegend) {
-            // make the legend rectangle transition
-            // width of transition depends on length of label text next to it
-            key = d.data.label
-            d3.selectAll(rectClassSel)
-              .transition()
-                .attr('width', function(d) {
+                if (d.data.label == key) {
+                  // get width of text next to the rectangle
+                  // nextSibling of rectangle is always its label
+                  const wd = d3.select(this.nextSibling).node().getBBox().width;
 
-                  if (d.data.label == key) {
-                    // get width of text next to the rectangle
-                    // nextSibling of rectangle is always its label
-                    const wd = d3.select(this.nextSibling).node().getBBox().width;
+                  return config.rectSize + wd + 2 * config.spacing
+                } else {
 
-                    return config.rectSize + wd + 2 * config.spacing
-                  } else {
-
-                    return config.rectSize
-                  }
-                })
-          }
+                  return config.rectSize
+                }
+              })
         }
-      })
-      .on('mousemove', function(d) {
-        if (this._pointerEvents) {
-          // grow on mousemove
-          d3.select(this)
-            .transition()
-              .duration(125)
-              .ease('in')
-              .attr('d', arcOver)
-          // show tooltip at cursor position and make it clickthrough
-          tooltip.html(d.data.tooltip)
-            .style('top',  `${d3.event.pageY + 15}px`)
-            .style('left', `${d3.event.pageX + 10}px`)
-            .style('pointer-events', 'none')
-            .style('visibility', 'visible')
-          }
-      })
-      .on('mouseout', function() {
-        if (this._pointerEvents) {
-          // transition arc to normal size
+      }
+    })
+    .on('mousemove', function(d) {
+      if (this._pointerEvents) {
+        // grow on mousemove
+        d3.select(this)
+          .transition()
+            .duration(125)
+            .ease('in')
+            .attr('d', arcOver)
+        // show tooltip at cursor position and make it clickthrough
+        tooltip.html(d.data.tooltip)
+          .style('top',  `${d3.event.pageY + 15}px`)
+          .style('left', `${d3.event.pageX + 10}px`)
+          .style('pointer-events', 'none')
+          .style('visibility', 'visible')
+      }
+    })
+    .on('mouseout', function() {
+      if (this._pointerEvents) {
+        // transition arc to normal size
+        d3.select(this)
+          .transition()
+            .ease('out')
+            .delay(100)
+            .duration(150)
+            .attr('d', arc)
+
+        // transition legend rectangle back to normal size
+        d3.selectAll(rectClassSel)
+          .transition()
+            .attr('width', config.rectSize)
+
+        // hide tooltip and remove its content
+        tooltip.html('').style('visibility', 'hidden');
+      }
+    })
+    .on('mousedown', function() {
+      if (this._pointerEvents) {
+        // transition arc back to normal size
+        d3.select(this)
+          .transition()
+            .ease('bounce')
+            .attr('d', arc)
+      }
+    })
+    .on('mouseup', function() {
+      if (this._pointerEvents) {
+        // transition back to mouseover size when on deepest level
+        const children = this.__data__.data[config.inner];
+        if (children === undefined) {
           d3.select(this)
             .transition()
               .ease('out')
-              .delay(100)
               .duration(150)
-              .attr('d', arc)
-
-          // transition legend rectangle back to normal size
-          d3.selectAll(rectClassSel)
-            .transition()
-              .attr('width', config.rectSize)
-
-          // hide tooltip and remove its content
-          tooltip.html('').style('visibility', 'hidden');
+              .attr('d', arcOver)
         }
-      })
-      .on('mousedown', function() {
-        if (this._pointerEvents) {
-          // transition arc back to normal size
-          d3.select(this)
-            .transition()
-              .ease('bounce')
-              .attr('d', arc)
-        }
-      })
-      .on('mouseup', function() {
-        if (this._pointerEvents) {
-          // transition back to mouseover size when on deepest level
-          const children = this.__data__.data[config.inner];
-          if (children === undefined) {
-            d3.select(this)
-              .transition()
-                .ease('out')
-                .duration(150)
-                .attr('d', arcOver)
-          }
-        }
-      })
-      .on('click', function() {
-        // drill down one level
-        // check for child nodes and set them as config.data
-        const children = this.__data__.data[config.inner];
-        if (children !== undefined) {
-          if (showHeading) config.headings.push(this.__data__.data.label)
+      }
+    })
+    .on('click', function() {
+      // drill down one level
+      // check for child nodes and set them as config.data
+      const children = this.__data__.data[config.inner];
+      if (children) {
+        if (showHeading) config.headings.push(this.__data__.data.label)
 
-          config.currentLevel++
-          config.data    = children
-          config.goingUp = false
-          config.history.push(children)
-          paths.each(function() {this._pointerEvents = false})
+        config.currentLevel++
+        config.data    = children
+        config.goingUp = false
+        config.history.push(children)
+        paths.each(function() {this._pointerEvents = false})
 
-
-          // hide tooltip and remove its content
-          tooltip.html('').style('visibility', 'hidden');
-          update(config)
-        }
-      });
+        // hide tooltip and remove its content
+        tooltip.html('').style('visibility', 'hidden');
+        update(config)
+      }
+    });
 
     // Collapse sectors for the exit selection
     paths.exit()
       .transition()
-      .duration(800)
-      .attrTween("d", tweenOut)
+        .duration(800)
+        .attrTween("d", tweenOut)
       .remove();
 
     // display headline with name of current layer
@@ -298,7 +320,8 @@ function draw_pie(config) {
         // set current headline
         config.heading = config.headings[config.currentLevel - 1]
 
-      svg.selectAll('text.heading').remove()
+      svg.selectAll('text.heading')
+        .remove()
 
       // create heading that displays the current layer's label
       let heading = svg.append('text')
@@ -311,47 +334,39 @@ function draw_pie(config) {
         .style('font-weight', 'bold');
     }
 
-    build_button(config, paths)
+    updateButton(config, paths)  // update the back-button
 
-    if (showLegend) build_legend(config, paths)
+    if (showLegend) updateLegend(config, paths)  // update legend
+    if (showLabels) updateLabels(config)
   }
-
-  // if (showLabels)
-  //     // create the labels at the centroids of arcs
-  //     arcs.append('text')
-  //         .attr('transform', d => `translate(${arc.centroid(d)})`)
-  //         .text(d => `${d.data.label}`)
-  //         .attr('text-anchor', 'middle')
-  //         .style('font-size', `${labelFontSize}px`)
-  //         .style('font-weight', 'bold')
-  //         .style('pointer-events', 'none');
 
 
 // --------------------------------------------------------- //
 //  UP BUTTON
 // --------------------------------------------------------- //
 
-  function build_button(config, paths) {
+  function updateButton(config, paths) {
 
     // remove old button
-    svg.selectAll(buttonClassSel).remove()
+    svg.selectAll(buttonClassSel)
+      .remove()
 
     const upBtn = svg.append('g')
       .attr('class', buttonClass);
 
     // determine initial and regular radius of the up-button circle element
     const rad = outerRadius / 7,
-      rInit = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
+      rInit   = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
 
     const btnAttr = {
               r : rInit,
            fill : 'green',
       transform : `translate(${outerRadius * 1.9 + hDiff}, 0)`,
           class : buttonClass
-    }
+    };
 
     const circ = upBtn.append('circle')
-      .attr(btnAttr)
+      .attr(btnAttr);
 
     const backTxt = upBtn.append('text')
       .text('BACK')
@@ -365,45 +380,44 @@ function draw_pie(config) {
     // disable some transitions on root level because they cause
     // problems with the conditional transitions further down
     if (config.currentLevel > 0) {
-
       circ.on('mouseover', function() {
-          d3.select(this)
-            .transition()
-              .duration(125)
-              .ease('in')
-              .attr('r', rad * 1.05)
-
-          backTxt.transition()
-            .ease('in')
+        d3.select(this)
+          .transition()
             .duration(125)
-            .style('font-size', `${(rad / 2) * 1.05}px`)
-        })
-        .on('mouseout', function() {
-          d3.select(this)
-            .transition()
-              .ease('out')
-              .delay(100)
-              .duration(150)
-              .attr('r', rad)
+            .ease('in')
+            .attr('r', rad * 1.05)
 
-          backTxt.transition()
-              .ease('out')
-              .delay(100)
-              .duration(150)
-            .style('font-size', `${rad / 2}px`)
-        })
-        .on('mousedown', function() {
-          d3.select(this)
-            .transition()
-              .ease('bounce')
-              .attr('r', rad * 0.95)
+        backTxt.transition()
+          .ease('in')
+          .duration(125)
+          .style('font-size', `${(rad / 2) * 1.05}px`)
+      })
+      .on('mouseout', function() {
+        d3.select(this)
+          .transition()
+            .ease('out')
+            .delay(100)
+            .duration(150)
+            .attr('r', rad)
 
-          backTxt.transition()
-              .ease('out')
-              .delay(100)
-              .duration(150)
-            .style('font-size', `${(rad / 2) * 0.95}px`)
-        })
+        backTxt.transition()
+          .ease('out')
+          .delay(100)
+          .duration(150)
+          .style('font-size', `${rad / 2}px`)
+      })
+      .on('mousedown', function() {
+        d3.select(this)
+          .transition()
+            .ease('bounce')
+            .attr('r', rad * 0.95)
+
+        backTxt.transition()
+          .ease('out')
+          .delay(100)
+          .duration(150)
+          .style('font-size', `${(rad / 2) * 0.95}px`)
+      })
     }
 
     circ.on('click', function() {
@@ -413,7 +427,7 @@ function draw_pie(config) {
         config.goingUp = true
         config.history.pop()  // delete last history breadcrumb
 
-        paths.each(function() {this._pointerEvents = false})
+        paths.each(function() { this._pointerEvents = false })
 
         if (showHeading) config.headings.pop()  // delete last heading breadcrumb
 
@@ -451,12 +465,99 @@ function draw_pie(config) {
       config.goingUp = false
     }
   }
+
+
 // --------------------------------------------------------- //
-//  LEGEND
-//  todo: multiple columns instead of scaling down to unreadable sizes
+//  LABEL
 // --------------------------------------------------------- //
 
-  function build_legend(c, paths) {
+
+  function updateLabels(config) {
+
+    pieData = pie(config.data)
+
+    // arc generator for better label alignment
+    const outerArc = d3.svg.arc()
+      .innerRadius(outerRadius)
+      .outerRadius(outerRadius);
+
+    // arc generator for better label alignment
+    const outermostArc = d3.svg.arc()
+      .innerRadius(outerRadius * 1.05)
+      .outerRadius(outerRadius * 1.15);
+
+    // move the label group element to the center
+    labels.attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`)
+
+    // bind data to empty selection
+    let text = labels.selectAll('text')
+      .data(pieData, key);
+
+    text.enter()
+      .append('text')
+      .attr('dy', '.35em')
+      .style('font-size', `${labelFontSize}px`)
+      .style('opacity', 0)
+      .text(key)
+      .attr('transform', function(d) {
+        let xy = outermostArc.centroid(d);
+
+        // change x coordinate to move label further to the left or right
+        xy[0] = 1.25 * outerRadius * (midAngle(d) < Math.PI ? 1 : -1);
+        return `translate(${xy})`;
+      })
+      .style('text-anchor', function(d){
+        return midAngle(d) < Math.PI ? 'start' : 'end';
+      })
+
+    text.transition()
+        .delay(duration)
+        .duration(duration)
+        .style('opacity', 1)
+
+    text.exit()
+      .transition()
+        .duration(duration)
+        .style('opacity', 0)
+      .remove();
+
+    polyline = svg.select(labelClassSel)
+      .selectAll('polyline')
+      .data(pie(config.data), key);
+
+    polyline.enter()
+      .append('polyline')
+      .style('opacity', 0)
+      .style('fill', 'none')
+      .style('stroke', 'black')
+      .style('stroke-width', '2px')
+      .attr('points', function(d) {
+        let xy = outermostArc.centroid(d);
+
+        // change x coordinate to move label further to the left or right
+        xy[0] = 1.2 * outerRadius * (midAngle(d) < Math.PI ? 1 : -1)
+        return [outerArc.centroid(d), outermostArc.centroid(d), xy];
+      })
+
+    polyline.transition()
+      .delay(duration)
+      .duration(duration)
+      .style('opacity', 0.6)
+
+    polyline.exit()
+      .transition()
+        .duration(duration)
+        .style('opacity', 0)
+      .remove();
+  }
+
+
+// --------------------------------------------------------- //
+//  LEGEND
+//  todo: better space management
+// --------------------------------------------------------- //
+
+  function updateLegend(c, paths) {
     // build legend components for current data set
     // pass config as c to shorten long lines
 
@@ -469,44 +570,42 @@ function draw_pie(config) {
 
     legend.enter()
       .append('g')
-      .attr('class', legendClass)
-      .attr('transform', function(d, i) {
-        // n is the max number of legend entries that fit in the svg vertically
-        const n = Math.floor((h - margin.top - margin.bottom) /
-                           (c.rectSize + c.spacing) * c.scaling)
+        .attr('class', legendClass)
+        .attr('transform', function(d, i) {
+          // n is the max number of legend entries that fit in the svg vertically
+          const n = Math.floor( (h - margin.top - margin.bottom) /
+                                (c.rectSize + c.spacing) * c.scaling )
 
-        if (pieData.length < n) {
+          if (pieData.length < n) {
+            // if all rectangles fit into one column, use only one column
+            const height = c.rectSize + c.spacing,
+              offset     = height * pieData.length,
+              dx = w - margin.right,
+              dy = (outerRadius - offset / 2) + i * height + c.spacing;
 
-          // if all rectangles fit into one column, use only one column
-          const height = c.rectSize + c.spacing,
-            offset   = height * pieData.length,
-            dx = w - margin.right,
-            dy = (outerRadius - offset / 2) + i * height + c.spacing;
+            return `translate(${dx}, ${dy})`
+          } else {
+            // use two columns if there are too many rectangles for one column
+            if (((c.rectSize + c.spacing) * pieData.length) > h * 2) {
 
-          return `translate(${dx}, ${dy})`
-        } else {
+              // scale down the legend if there are too many rectangles for two cols
+              c.scaling = (h * 2 - margin.top - margin.bottom) /
+                          ((c.rectSize + c.spacing) * pieData.length)
 
-          // use two columns if there are too many rectangles for one column
-          if (((c.rectSize + c.spacing) * pieData.length) > h * 2) {
+              c.rectSize = c.rectSize * c.scaling
+              c.spacing  = c.spacing  * c.scaling
+              c.fontSize = Math.round(c.fontSize * c.scaling)
+            }
 
-            // scale down the legend if there are too many rectangles for two cols
-            c.scaling = (h * 2 - margin.top - margin.bottom) /
-                        ((c.rectSize + c.spacing) * pieData.length)
+            // height and position for legend entries in two columns
+            const height = c.rectSize + c.spacing,
+              offset     = height * pieData.length,
+              dx = (w - margin.right) + (i % 2) * (margin.right / 3),
+              dy = (outerRadius - offset / 4) + Math.floor(i / 2) * height;
 
-            c.rectSize = c.rectSize * c.scaling
-            c.spacing  = c.spacing * c.scaling
-            c.fontSize = Math.round(c.fontSize * c.scaling)
+            return `translate(${dx}, ${dy})`
           }
-
-          // height and position for legend entries in two columns
-          const height = c.rectSize + c.spacing,
-            offset   = height * pieData.length,
-            dx = (w - margin.right) + (i % 2) * (margin.right / 3),
-            dy = (outerRadius - offset / 4) + Math.floor(i / 2) * height;
-
-          return `translate(${dx}, ${dy})`
-        }
-    });
+      });
 
     // legend rectangle attributes
     const legendAttrs = {
@@ -549,7 +648,7 @@ function draw_pie(config) {
           .style('pointer-events', 'none')            // make clickthrough
           .style('visibility', 'visible')             // show tooltip
 
-        key = d.data.label
+        let key = d.data.label;
         paths.each(function() {
           if (this._pointerEvents) {
             arcLabel = this.__data__.data.label
@@ -595,7 +694,7 @@ function draw_pie(config) {
         })
       })
       .on('mouseup', function(d) {
-        key = d.data.label
+        let key = d.data.label;
         // grow arc back to mouseover size on mouseup when on deepest level
         paths.each(function() {
           if (this._pointerEvents) {
@@ -636,7 +735,8 @@ function draw_pie(config) {
       });
 
   }
-update(config)
+
+  update(config)
 
   function tweenIn(d) {
     // interpolate an arc from 0° to it's designated angle
@@ -654,6 +754,10 @@ update(config)
     return function(t) {
         return arc(i(t));
     }
+  }
+
+  function midAngle(d) {
+    return d.startAngle + (d.endAngle - d.startAngle) / 2;
   }
 }
 
