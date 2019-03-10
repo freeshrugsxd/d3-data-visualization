@@ -14,7 +14,12 @@ The following types of visualizations will be covered over the course of this pr
 
 A multi level, drill down pie chart to explore the composition of nested data sets.
 
-Features:
+### Demo
+<p align="center">
+    <img src="https://i.imgur.com/gjX87Ey.gif" align="center">
+</p>
+
+### Features
 
 * displays any nested data set
 * not limited by the number of levels

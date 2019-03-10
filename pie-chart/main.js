@@ -74,6 +74,8 @@ let pie_area = (function(){
 
 })()
 
+let resize_windows = function(){
+    window.dispatchEvent(new Event('resize'))
+}
 
-let resize_windows = function(){ window.dispatchEvent(new Event('resize'))}
 window.addEventListener('resize', pie_area.render)
