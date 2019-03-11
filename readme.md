@@ -28,7 +28,7 @@ A multi level, drill down pie chart to explore the composition of nested data se
 * a tooltip displays information on currently hovered data subset
 * different color ranges
 
-Some features can be turned on or off at will by setting their values to either <i>true</i> or <i>false</i> in the config in the main.js file.
+Some features can be turned on or off at will by setting their values to either <i>true</i> or <i>false</i> in the config in the /pie-chart/main.js file.
 
 #### Optional Features
 
