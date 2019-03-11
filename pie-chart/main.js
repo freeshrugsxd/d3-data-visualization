@@ -1,5 +1,5 @@
 let pie_area = (function(){
-    d3.json('pie-chart/pie_data.json', init) // read data set and pass it to callback
+    d3.json('pie-chart/pie_data.min.json', init) // read data set and pass it to callback
 
     // create configuration template object that holds the settings' default values
     let config_template  = {

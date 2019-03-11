@@ -6,9 +6,9 @@ This project shows my efforts to create data driven visualizations on web pages 
 
 The following types of visualizations will be covered over the course of this project:
 
-* Pie Charts
-* Spatial Data
-* Time Series
+* [x] Pie Charts
+* [ ] Spatial Data
+* [ ] Time Series
 
 ## Pie Chart Summary
 
@@ -22,19 +22,18 @@ A multi level, drill down pie chart to explore the composition of nested data se
 ### Features
 
 * displays any nested data set
-* not limited by the number of levels
 * drill down by clicking the pie slice or the legend entry
-* drill up by clicking the BACK-Button
+* drill up by clicking the back-button
 * hover and click transitions make the chart feel responsive
-* a tool tip displays information on currently hovered data subset
-* 9 different color ramps
+* a tooltip displays information on currently hovered data subset
+* different color ranges
 
-Some features can be turned on or off at will by setting their values to either <b>true</b> or <b>false</b> in the config in the main.js file.
+Some features can be turned on or off at will by setting their values to either <i>true</i> or <i>false</i> in the config in the main.js file.
 
-Optional features:
+#### Optional Features
 
 * add a heading above the chart that displays the label of the current level
-* show a legend that matches the content currently displayed in the pie chart
-* trigger a transition on a legend entry when hovering the corresponding pie slice in the chart
-* display labels at the center the pie slices
+* show a legend for the displayed data
+* trigger a transition on a legend entry when hovering the corresponding pie slice
+* display labels around the chart
 * truncate overly long legend labels ('This is a long la...') when not hovered
