@@ -31,8 +31,7 @@ function draw_pie(config) {
     labelFontSize = config.label_size  || 12,
 
     w = $(chartClassSel).width(), // width of div container
-    duration = 600,  // duration for main transitions (tweenIn/tweenOut/labels...)
-    key = d => d.data.label;
+    duration = 600;  // duration for main transitions (tweenIn/tweenOut/labels...)
 
   // initial declaration of legend params
   let initialLegendScaling =  1,  // intitial legend scaling factor
@@ -180,7 +179,7 @@ function draw_pie(config) {
 
     pieData = pie(config.data)
     let paths = arcs.selectAll(arcClassSel)
-      .data(pieData, key)
+      .data(pieData, d => d.data.label)
 
     paths.enter()
       .append('path')
@@ -307,7 +306,7 @@ function draw_pie(config) {
     // Collapse sectors for the exit selection
     paths.exit()
       .transition()
-        .duration(800)
+        .duration(duration)
         .attrTween("d", tweenOut)
       .remove();
 
@@ -491,14 +490,14 @@ function draw_pie(config) {
 
     // bind data to empty selection
     let text = labels.selectAll('text')
-      .data(pieData, key);
+      .data(pieData, d => d.data.label);
 
     text.enter()
       .append('text')
       .attr('dy', '.35em')
       .style('font-size', `${labelFontSize}px`)
       .style('opacity', 0)
-      .text(key)
+      .text(d => d.data.label)
       .attr('transform', function(d) {
         let xy = outermostArc.centroid(d);
 
@@ -523,7 +522,7 @@ function draw_pie(config) {
 
     polyline = svg.select(labelClassSel)
       .selectAll('polyline')
-      .data(pie(config.data), key);
+      .data(pie(config.data), d => d.data.label);
 
     polyline.enter()
       .append('polyline')
@@ -750,7 +749,6 @@ function draw_pie(config) {
   function tweenOut(d) {
     d.startAngle = d.endAngle = 2 * Math.PI;
     let i = d3.interpolate(this._current, d);
-    this._current = i(0);
     return function(t) {
         return arc(i(t));
     }
@@ -759,10 +757,10 @@ function draw_pie(config) {
   function midAngle(d) {
     return d.startAngle + (d.endAngle - d.startAngle) / 2;
   }
-}
 
-text_truncate = function(str, length) {
-  if (length === null) return str;
-  if (str.length >= length) return `${str.substring(0, length - 3)}...`;
-  else return str;
+  function text_truncate(str, length) {
+    if (length === null) return str;
+    if (str.length >= length) return `${str.substring(0, length - 3)}...`;
+    else return str;
+  }
 }

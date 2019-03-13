@@ -47,7 +47,6 @@ let pie_area = (function(){
 
         config_array[2].data         = json.my_test_data
         config_array[2].div_class    = 'drill-down-pie-chart-3'
-        config_array[2].labels       = true
         config_array[2].legend       = true
         config_array[2].color        = 'cat10'
 
