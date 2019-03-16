@@ -1,6 +1,5 @@
 /pie-chart/pie_data.json
-/map/world_boundaries.json
+/geo/world_boundaries.json
 /testing/*
 /examples/*
 *.ipynb
-
