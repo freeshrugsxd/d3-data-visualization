@@ -85,7 +85,7 @@ function draw_pie(config) {
   // increase left and right margins if outside labels are shown
   if (showLabels) {
     margin.left  = Math.max(0.2 * w, margin.left)
-    margin.right = Math.max(0.2 * w, margin.right)
+    margin.right = Math.max(0.15 * w, margin.right)
   }
 
   // pie chart params
@@ -307,7 +307,7 @@ function draw_pie(config) {
     paths.exit()
       .transition()
         .duration(duration)
-        .attrTween("d", tweenOut)
+        .attrTween('d', tweenOut)
       .remove();
 
     // display headline with name of current layer
