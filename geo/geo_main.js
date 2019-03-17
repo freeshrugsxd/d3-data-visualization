@@ -3,7 +3,10 @@ let map = (function(){
 
     // create configuration template object that holds the settings' default values
     let config_template  = {
+            height : 600,
          div_class : 'map',        // class of the div container holding the chart
+        projection : 'mercator',
+              grid : false,
             margin : {    top : 50,
                         right : 50,
                        bottom : 50,
@@ -15,10 +18,19 @@ let map = (function(){
         stacked = [];
 
     config_array.push(jQuery.extend(true, {}, config_template))
+    config_array.push(jQuery.extend(true, {}, config_template))
 
     function init(json) {
         // add data and specify configuration for each chart
-        config_array[0].features = json.features
+        config_array[0].div_class  = 'map1'
+        config_array[0].features   = json.features
+        config_array[0].projection = 'mercator'
+
+        config_array[1].div_class  = 'map2'
+        config_array[1].features   = json.features
+        config_array[1].projection = 'globe'
+        config_array[1].rotation   = [-4, -25]
+        config_array[1].graticule  = true
         redraw()
     }
 
