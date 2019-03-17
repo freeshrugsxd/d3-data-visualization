@@ -30,7 +30,7 @@ function draw_map(config) {
 
   let zoom = d3.behavior.zoom()
     .scaleExtent([1, 5])
-    // .on('zoom', panAndZoom)
+    .on('zoom', panAndZoom)
 
   let svg = d3.select(divClassSel)
     .append('svg')
@@ -113,13 +113,15 @@ function draw_map(config) {
 
 
   function panAndZoom() {
-    let t = d3.event.translate,
-      s = d3.event.scale,
-      x = Math.min((width / height) * (s - 1), Math.max(width * (1 - s), t[0])),
-      h = height / 4,
-      y = Math.min(h * (s - 1) + h * s, Math.max(height * (1 - s) - h * s, t[1]));
+    if (config.projection != 'globe') {
+      let t = d3.event.translate,
+        s = d3.event.scale,
+        x = Math.min((width / height) * (s - 1), Math.max(width * (1 - s), t[0])),
+        h = height / 4,
+        y = Math.min(h * (s - 1) + h * s, Math.max(height * (1 - s) - h * s, t[1]));
 
-    mainGrp.attr('transform', `translate(${x},${y})scale(${s})`);
+      mainGrp.attr('transform', `translate(${x},${y})scale(${s})`);
+    }
   }
 
 
