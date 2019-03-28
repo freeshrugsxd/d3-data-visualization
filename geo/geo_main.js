@@ -19,18 +19,28 @@ let map = (function(){
 
     config_array.push(jQuery.extend(true, {}, config_template))
     config_array.push(jQuery.extend(true, {}, config_template))
+    config_array.push(jQuery.extend(true, {}, config_template))
+
 
     function init(json) {
         // add data and specify configuration for each chart
         config_array[0].div_class  = 'map1'
+        // config_array[0].height     = 300
         config_array[0].features   = json.features
-        config_array[0].projection = 'mercator'
+        config_array[0].projection = 'equirect'
+        config_array[0].graticule  = true
+
 
         config_array[1].div_class  = 'map2'
         config_array[1].features   = json.features
         config_array[1].projection = 'globe'
         config_array[1].rotation   = [-4, -25]
         config_array[1].graticule  = true
+
+
+        config_array[2].div_class  = 'map3'
+        config_array[2].features   = json.features
+        config_array[2].projection = 'mercator'
         redraw()
     }
 
