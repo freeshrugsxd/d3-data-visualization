@@ -1,5 +1,11 @@
 let map = (function(){
-    d3.json('geo/world_boundaries.min.json', init) // read data set and pass it to callback
+
+    let q = d3.queue();
+        
+    q.defer(d3.json, 'geo/point.data.min.json')
+    q.defer(d3.json, 'geo/world_boundaries.min.json')
+    q.defer(d3.json, 'geo/provs.topo.json')
+    q.await(init)
 
     // create configuration template object that holds the settings' default values
     let config_template  = {
@@ -21,27 +27,34 @@ let map = (function(){
     config_array.push(jQuery.extend(true, {}, config_template))
     config_array.push(jQuery.extend(true, {}, config_template))
 
+    let data = []
 
-    function init(json) {
+    function init(error, data, countries, provinces) {
+        if (error) throw error;
+
+        // json contains point features holding the values we want to display on the map
         // add data and specify configuration for each chart
         config_array[0].div_class  = 'map1'
         // config_array[0].height     = 300
-        config_array[0].features   = json.features
+        config_array[0].data       = data.features
+        config_array[0].features   = {}
+        config_array[0].features.countries = countries.features
+        config_array[0].features.provinces = topojson.feature(provinces, provinces.objects.provs).features
         config_array[0].projection = 'equirect'
         config_array[0].graticule  = true
 
+        // config_array[1].div_class  = 'map2'
+        // config_array[1].features   = json.features
+        // config_array[1].projection = 'globe'
+        // config_array[1].rotation   = [-4, -25]
+        // config_array[1].graticule  = true
 
-        config_array[1].div_class  = 'map2'
-        config_array[1].features   = json.features
-        config_array[1].projection = 'globe'
-        config_array[1].rotation   = [-4, -25]
-        config_array[1].graticule  = true
 
-
-        config_array[2].div_class  = 'map3'
-        config_array[2].features   = json.features
-        config_array[2].projection = 'mercator'
+        // config_array[2].div_class  = 'map3'
+        // config_array[2].features   = json.features
+        // config_array[2].projection = 'mercator'
         redraw()
+
     }
 
     function redraw() {
