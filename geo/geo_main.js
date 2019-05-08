@@ -1,11 +1,18 @@
 let map = (function(){
 
     let q = d3.queue();
-        
-    q.defer(d3.json, 'geo/point.data.min.json')
-    q.defer(d3.json, 'geo/world_boundaries.min.json')
-    q.defer(d3.json, 'geo/provs.topo.json')
-    q.await(init)
+    /* 
+        the queue library is used to read the contents of multiple files concurrently 
+        instead of asynchronously. This is preferable over the alternative of having n
+        nested d3.json calls. The content of all deferred files will be read and then 
+        passed to the callback specified by the await() function.
+        see: https://github.com/d3/d3-queue        
+        code: libs/d3-queue.v3.min.js
+    */    
+    q.defer(d3.json, 'geo/point.data.json')  // point data set containing random values
+    q.defer(d3.json, 'geo/world.boundaries.min.json')  // world country borders geoJSON
+    q.defer(d3.json, 'geo/provs.min.topo.json')  // world province borders topoJSON
+    q.await(init)  // pass all json files to init
 
     // create configuration template object that holds the settings' default values
     let config_template  = {
@@ -23,23 +30,33 @@ let map = (function(){
     let config_array = [],
         stacked = [];
 
+    // push one copy of the template to the array for every time you want to call
+    // draw_map on the page
     config_array.push(jQuery.extend(true, {}, config_template))
     config_array.push(jQuery.extend(true, {}, config_template))
     config_array.push(jQuery.extend(true, {}, config_template))
-
-    let data = []
 
     function init(error, data, countries, provinces) {
+        /*  Process the contents of all json files. 
+            The data parameter is a point feature collection containing ~4.6k points with
+            a random value attached (integer between 1 and 10). 
+            Next to the point data, there are two data sets that depict administrative
+            boundaries of the earth, one for every country and one for provinces. 
+        */
         if (error) throw error;
 
-        // json contains point features holding the values we want to display on the map
+
+        topojson.presimplify(provinces)
+        // convert the topoJSON Topology into a geoJSON FeatureCollection and grab its features
+        let features = topojson.feature(provinces, provinces.objects.provs).features
+
         // add data and specify configuration for each chart
         config_array[0].div_class  = 'map1'
         // config_array[0].height     = 300
         config_array[0].data       = data.features
         config_array[0].features   = {}
         config_array[0].features.countries = countries.features
-        config_array[0].features.provinces = topojson.feature(provinces, provinces.objects.provs).features
+        config_array[0].features.provinces = features
         config_array[0].projection = 'equirect'
         config_array[0].graticule  = true
 
