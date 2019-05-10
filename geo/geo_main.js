@@ -57,7 +57,7 @@ let map = (function(){
         config_array[0].features.countries = countries.features
         config_array[0].features.provinces = provinces.features
         config_array[0].projection = 'equirect'
-        config_array[0].graticule  = true
+        config_array[0].graticule  = false
 
         // config_array[1].div_class  = 'map2'
         // config_array[1].features   = json.features

@@ -90,11 +90,7 @@ function draw_map(config) {
     .x(d => d.x)
     .y(d => d.y)
 
-  /* create temporary array which will hold the point information
-  during each update. this way we do not change the original data
-  stored in config.data */
-  
-
+  // update the map after zooming in
   function update(config) {
 
     let data = config.data,
@@ -122,21 +118,8 @@ function draw_map(config) {
     // create quadtree
     qtree = quadtree(points)
     
-    // uncomment this part to visualize the quadtree geometry:
-    // mainGrp.selectAll('rect').remove()
-    //   qtree.visit( function(quad, x0, y0, x1, y1) {
-    //     mainGrp.append('rect')
-    //       .attr('transform', `translate(${x0}, ${y0})`)
-    //       .attr({
-    //         height: `${x1 - x0}px`,
-    //         width : `${y1 - y0}px`,
-    //         fill  : 'none',
-    //         stroke : 'black'
-    //       })
-    //   })
-
     /* The following algorithm is used to find and assign the maximum circle radii for 
-      every quadrat in the quadtree. Only leaf notes have a point attribute attached, 
+      every quadrat in the quadtree. Only leaf nodes have a point attribute attached, 
       which holds the radius for the corrisponding point. Our goal is to find the 
       maximum radius of all circles inside a quadrat (node) and all of its child nodes.
       To do this, we first store all the nodes in an array and then start to work our
@@ -164,6 +147,7 @@ function draw_map(config) {
 
     // take last item of the array and check if its a leaf
     while (quad = next.pop()) {
+      quad.visitedBy = []
       if (quad.point) {
         // assign radius attribute to quadrat and continue with next iteration
         quad.r = quad.point.r
@@ -185,59 +169,68 @@ function draw_map(config) {
       within or within one radius distance of the quadrat. If this is not the case, that node's
       child nodes will not be visited. (https://github.com/d3/d3-3.x-api-reference/blob/master/Quadtree-Geom.md#visit)
     */
+      
+    let its = 0,
+      oldLen = 0;
 
-    for (let i in points) {
-      p1 = points[i]
+    while (true) {
+      for (let i in points) {
+        p1 = points[i]
+        // visit each node in the quadtree
+        qtree.visit(function(quad, x0, y0, x1, y1) {
+          // quad.visitedBy.push(p1.index)
+          let p2 = quad.point,
+              r  = p1.r + quad.r;
+          
+          if (p2) {
+            if (p2.index != p1.index && p1.a && p2.a) {
+              let x = p2.x - p1.x,
+                  y = p2.y - p1.y,
+                  l = Math.sqrt(x * x + y * y),
+                  a, b;
 
-      // visit each node in the quadtree
-      qtree.visit(function(quad, x0, y0, x1, y1) {
-        let p2 = quad.point,
-            r  = p1.r + quad.r;
+              // check for circle-circle intersection
+              // https://www.youtube.com/watch?v=hYDRUES1DSM
+              if (l < (p1.r + p2.r)) {
 
-        if (p2) {
-          if (p2.index > p1.index && p1.a && p2.a) {
+                // figure out which circle is the bigger one (by area)
+                if (p2.a > p1.a) {a = p2, b = p1}
+                else {            a = p1, b = p2}
 
-            let x = p2.x - p1.x,
-                y = p2.y - p1.y,
-                l = x * x + y * y,
-                a, b;
+                // calculate new weighted center point of merged circle
+                a.x = (a.x * a.a + b.x * b.a) / (a.a + b.a)
+                a.y = (a.y * a.a + b.y * b.a) / (a.a + b.a)
 
-            // check for circle-circle intersection
-            // https://www.youtube.com/watch?v=hYDRUES1DSM
-            if (Math.sqrt(l) < (p1.r + p2.r)) {
+                // add count of absorbed circle
+                a.count += b.count
+                a.a += b.a
+                a.r = Math.sqrt(a.a / pi)
 
-              // figure out which circle is the bigger one (by area)
-              if (p2.a > p1.a) {a = p2, b = p1}
-              else {            a = p1, b = p2}
+                b.a = 0
+                b.r = 0
 
-              // calculate new weighted center point of merged circle
-              a.x = (a.x * a.a + b.x * b.a) / (a.a + b.a)
-              a.y = (a.y * a.a + b.y * b.a) / (a.a + b.a)
-
-              // add count of absorbed circle
-              a.count += b.count
-              a.a += b.a
-              a.r = Math.sqrt(a.a / pi)
-              if (a.r > quad.r) quad.r = a.r
-
-              b.a = 0
-              b.r = 0
+                if (a.r > quad.r) quad.r = a.r
+              }
             }
           }
-        }
+          /* Check if circle lies outside of the quad's bounding box.
+            If this returns true, child nodes of the quad are not going to be visited.
+            The combined radius r is used as a buffer, since a point can lie near or
+            on the boundary of a quadrat.
+          */
+          return x0 > p1.x + r || x1 < p1.x - r || y0 > p1.y + r || y1 < p1.y - r
+        })
+      }
 
-      /* Check if circle lies outside of the quad's bounding box.
-        If this returns true, child nodes of the quad are not going to be visited.
-        The combined radius r is used as a buffer, since a point can lie near or
-        on the boundary of a quadrat.
-      */
-      return x0 > p1.x + r || x1 < p1.x - r || y0 > p1.y + r || y1 < p1.y - r
-
-      })
+      points = points.filter(d => d.r != 0)  // remove absorbed circles from the array
+      if (points.length == oldLen) break  // stop while loop if number of points didn't change
+      oldLen = points.length  // save number of points for next iteration
+      its += 1
     }
+    console.log('its', its)
 
     mainGrp.selectAll('circle').remove()
-    // add circles on top of the map
+    // add circles to the map
     let circs = mainGrp.selectAll('circle')
       .data(points)
       .enter()
@@ -257,34 +250,27 @@ function draw_map(config) {
             'stroke-width': `${0.5/Math.sqrt(config.scale)}px`,
           })
           .style('opacity', 0.7);
-    
-    console.log('updated')
-
-    // circs.on('mouseenter', function(d) {
-    //   d3.select(this)
-    //     .attr('r', d.r * 1.3)
-    //     .style('fill', 'yellow')
-    //   })
-
-    // .on('mouseout', function(d) {
-    //   d3.select(this)
-    //     .attr('r', d.r)
-    //     .style('fill', function() {
-    //       let col = 'green'
-    //       if (d.count > 3) col = 'blue'
-    //       if (d.count > 5) col = 'red'
-    //       return col
-    //     })
-    //   })
-
-
-/* 
-    circs.on('click', function() {
-      console.log('count', this.__data__.count)
-      console.log('index', this.__data__.index)
-      console.log('data', this.__data__)
-    })
-*/    
+        
+        function tick() {
+            circs.attr('cx', d => d.x)
+                .attr('cy', d => d.y)
+        }
+/*
+    //visualize the quadtree geometry:
+    mainGrp.selectAll('rect').remove()
+    qtree.visit( function(quad, x0, y0, x1, y1) {
+        mainGrp.append('rect')
+          .attr('transform', `translate(${x0}, ${y0})`)
+          .attr({
+            height: `${x1 - x0}px`,
+            width : `${y1 - y0}px`,
+            fill  : 'none',
+            stroke : 'black',
+            class : 'qtrect',
+            'stroke-width' : '0.05px'
+          })
+      })
+*/
 
 /* 
     let label = mainGrp.append('g');
@@ -309,18 +295,17 @@ function draw_map(config) {
 
     if (config.scale != s) {
 
-      // turn visibility of the different boundary layer on and off
-      // based on current scale
-      if (config.scale <= 5) {
-        countries.style('visibility', 'visible')
+      // toggle visibility of the different boundary layer based on current scale
+      if (config.scale <= 15) {
         provinces.style('visibility', 'hidden')
+        countries.style('visibility', 'visible')
+        countries.style('stroke-width', `${1/Math.sqrt(s)}px`)
       } else {
         countries.style('visibility', 'hidden')
         provinces.style('visibility', 'visible')
-      }
-      countries.style('stroke-width', `${1/Math.sqrt(s)}px`)
-      provinces.style('stroke-width', `${1/Math.sqrt(s)}px`)
+        provinces.style('stroke-width', `${0.4/Math.sqrt(s)}px`)
 
+      }
       config.scale = s
       update(config)
     }
