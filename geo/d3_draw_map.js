@@ -11,15 +11,11 @@ function draw_map(config) {
       rotation = config.rotation || [0, 0],
       pi = Math.PI;
 
-  let provs = config.features.provinces,
-      cntrs = config.features.countries;
-
   config.scale = 1
 
   $(divClassSel).html('')
 
   let zoom = d3.behavior.zoom()
-    .scaleExtent([0, 150])
     .on('zoom', panAndZoom);
 
   let svg = d3.select(divClassSel)
@@ -63,12 +59,12 @@ function draw_map(config) {
   }
 
   let scaleRad = d3.scale.pow()
-    .domain([2, 30])
-    .range([1, 6])
+    .domain([1, 100])
+    .range([1, 10])
 
   // add boundaries for smaller administrative areas (provinces)  
   let provinces = mainGrp.selectAll(`${boundClassSel}_prov`)
-    .data(provs)
+    .data(config.features.provinces)
     .enter()
       .append('path')
         .attr('class', boundClass)
@@ -78,14 +74,24 @@ function draw_map(config) {
 
   // add boundaries for country level of detail
   let countries = mainGrp.selectAll(`${boundClassSel}_country`)
-    .data(cntrs)
+    .data(config.features.countries)
     .enter()
       .append('path')
         .attr('class', boundClass)
         .attr('d', path)
         .style({ fill: 'silver', stroke: 'white' });
 
-  // convenience function to calculate the quadtree
+
+  // let ciddies = mainGrp.selectAll('.cities')
+  //   .data(config.features.cities)
+  //   .enter()
+  //     .append('circle')
+  //       .attr('')
+  //       .attr('class', 'cities')
+
+
+
+        // convenience function to calculate the quadtree
   let quadtree = d3.geom.quadtree()
     .x(d => d.x)
     .y(d => d.y)
@@ -119,7 +125,7 @@ function draw_map(config) {
     qtree = quadtree(points)
     
     /* The following algorithm is used to find and assign the maximum circle radii for 
-      every quadrat in the quadtree. Only leaf nodes have a point attribute attached, 
+      every quadrat in the quadtree. Only leaf nodes have a point object attached, 
       which holds the radius for the corrisponding point. Our goal is to find the 
       maximum radius of all circles inside a quadrat (node) and all of its child nodes.
       To do this, we first store all the nodes in an array and then start to work our
@@ -170,15 +176,14 @@ function draw_map(config) {
       child nodes will not be visited. (https://github.com/d3/d3-3.x-api-reference/blob/master/Quadtree-Geom.md#visit)
     */
       
-    let its = 0,
-      oldLen = 0;
+    let oldLen = 0;
 
     while (true) {
       for (let i in points) {
         p1 = points[i]
         // visit each node in the quadtree
         qtree.visit(function(quad, x0, y0, x1, y1) {
-          // quad.visitedBy.push(p1.index)
+
           let p2 = quad.point,
               r  = p1.r + quad.r;
           
@@ -208,8 +213,6 @@ function draw_map(config) {
 
                 b.a = 0
                 b.r = 0
-
-                if (a.r > quad.r) quad.r = a.r
               }
             }
           }
@@ -222,12 +225,10 @@ function draw_map(config) {
         })
       }
 
-      points = points.filter(d => d.r != 0)  // remove absorbed circles from the array
+      points = points.filter(d => d.r != 0)  // remove absorbed circles from array
       if (points.length == oldLen) break  // stop while loop if number of points didn't change
       oldLen = points.length  // save number of points for next iteration
-      its += 1
     }
-    console.log('its', its)
 
     mainGrp.selectAll('circle').remove()
     // add circles to the map
@@ -240,21 +241,13 @@ function draw_map(config) {
             r : d => d.r,
             cx: d => d.x || -1e9, // off the viewport if its on the
             cy: d => d.y || -1e9, // far side of the globe
-            fill: function(d) {
-              let col = 'green'
-              if (d.count > 3) col = 'blue'
-              if (d.count > 5) col = 'red'
-              return col
-            },
+            fill: 'green',
             stroke: 'black',
             'stroke-width': `${0.5/Math.sqrt(config.scale)}px`,
           })
-          .style('opacity', 0.7);
-        
-        function tick() {
-            circs.attr('cx', d => d.x)
-                .attr('cy', d => d.y)
-        }
+          .style('opacity', 0.9);
+
+
 /*
     //visualize the quadtree geometry:
     mainGrp.selectAll('rect').remove()

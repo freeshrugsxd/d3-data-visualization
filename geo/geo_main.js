@@ -9,10 +9,15 @@ let map = (function(){
         see: https://github.com/d3/d3-queue        
         code: libs/d3-queue.v3.min.js
     */    
-    q.defer(d3.json, 'geo/point.data.json')  // point data set containing random values
-    q.defer(d3.json, 'geo/world.boundaries.min.json')  // world country borders geoJSON
-    console.log('start')
-    q.defer(d3.json, 'geo/provs.min.topo.json')  // world province borders topoJSON
+    jsonFiles = [
+        'geo/point.data.json',              // point data set containing random values
+        'geo/cities.json',                  // capitals and world cities
+        'geo/world.boundaries.min.json',    // world country borders geoJSON
+        'geo/provs.min.topo.json'           // world province borders topoJSON
+    ]
+
+    for (let i in jsonFiles) q.defer(d3.json, jsonFiles[i])
+
     q.await(init)  // pass all json files to init
 
     // create configuration template object that holds the settings' default values
@@ -37,7 +42,7 @@ let map = (function(){
     config_array.push(jQuery.extend(true, {}, config_template))
     config_array.push(jQuery.extend(true, {}, config_template))
 
-    function init(error, data, countries, provinces) {
+    function init(error, data, cities, countries, provinces) {
         /*  Process the contents of all json files. 
             The data parameter is a point feature collection containing ~4.6k points with
             a random value attached (integer between 1 and 10). 
@@ -52,23 +57,19 @@ let map = (function(){
 
         // add data and specify configuration for each chart
         config_array[0].div_class  = 'map1'
-        // config_array[0].height     = 300
         config_array[0].data       = data.features
         config_array[0].features.countries = countries.features
         config_array[0].features.provinces = provinces.features
+        config_array[0].features.cities    = cities.features
         config_array[0].projection = 'equirect'
         config_array[0].graticule  = false
 
-        // config_array[1].div_class  = 'map2'
-        // config_array[1].features   = json.features
-        // config_array[1].projection = 'globe'
-        // config_array[1].rotation   = [-4, -25]
-        // config_array[1].graticule  = true
-
-
-        // config_array[2].div_class  = 'map3'
-        // config_array[2].features   = json.features
-        // config_array[2].projection = 'mercator'
+        config_array[1].div_class  = 'map3'
+        config_array[1].projection = 'mercator'
+        config_array[1].data       = data.features
+        config_array[1].features.countries = countries.features
+        config_array[1].features.provinces = provinces.features
+        config_array[1].features.cities    = cities.features
         redraw()
 
     }
