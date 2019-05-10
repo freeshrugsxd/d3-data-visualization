@@ -11,6 +11,7 @@ let map = (function(){
     */    
     q.defer(d3.json, 'geo/point.data.json')  // point data set containing random values
     q.defer(d3.json, 'geo/world.boundaries.min.json')  // world country borders geoJSON
+    console.log('start')
     q.defer(d3.json, 'geo/provs.min.topo.json')  // world province borders topoJSON
     q.await(init)  // pass all json files to init
 
@@ -24,7 +25,7 @@ let map = (function(){
                         right : 50,
                        bottom : 50,
                          left : 50 },
-          features : [],
+          features : {},
     };
 
     let config_array = [],
@@ -45,18 +46,16 @@ let map = (function(){
         */
         if (error) throw error;
 
-
-        topojson.presimplify(provinces)
-        // convert the topoJSON Topology into a geoJSON FeatureCollection and grab its features
-        let features = topojson.feature(provinces, provinces.objects.provs).features
+        // convert the topoJSON Topology to geoJSON FeatureCollection and grab its features
+        provinces = topojson.feature(provinces, provinces.objects.provs)
+        console.log('end')
 
         // add data and specify configuration for each chart
         config_array[0].div_class  = 'map1'
         // config_array[0].height     = 300
         config_array[0].data       = data.features
-        config_array[0].features   = {}
         config_array[0].features.countries = countries.features
-        config_array[0].features.provinces = features
+        config_array[0].features.provinces = provinces.features
         config_array[0].projection = 'equirect'
         config_array[0].graticule  = true
 

@@ -39,6 +39,7 @@ function draw_map(config) {
                  .rotate([0, -25]),
   };
 
+  // convenience function to project any data to the specified projection
   let proj = projections[config.projection]
     .translate([width / 2, height / 2])
     .rotate(rotation);
@@ -92,12 +93,13 @@ function draw_map(config) {
   /* create temporary array which will hold the point information
   during each update. this way we do not change the original data
   stored in config.data */
-  let points = Array(config.data.length)
+  
 
   function update(config) {
 
-    let data = config.data
-    
+    let data = config.data,
+      points = Array(data.length);
+
     // populate points array with our data
     data.map( function(d, i) {
       points[i] = {}
@@ -105,11 +107,11 @@ function draw_map(config) {
       points[i].count = 1
 
       // assign radius and x & y coords
-      // we want r to become smaller when we zoom in, so the clusters will loosen up
+      // we want r to become smaller (or stay the same, propotionally) when we zoom in
       points[i].r = scaleRad(d.properties.value) * (1 / Math.sqrt(config.scale))
 
       // the data is stored as WGS84 lat/lon, so we need to project them
-      // to our local coordinate system
+      // to our local coordinate system (x, y)
       points[i].x = proj(d.geometry.coordinates)[0]
       points[i].y = proj(d.geometry.coordinates)[1]
 
@@ -133,61 +135,80 @@ function draw_map(config) {
     //       })
     //   })
 
-    // only leaf nodes have points stored in them. 
-    let next = [];
+    /* The following algorithm is used to find and assign the maximum circle radii for 
+      every quadrat in the quadtree. Only leaf notes have a point attribute attached, 
+      which holds the radius for the corrisponding point. Our goal is to find the 
+      maximum radius of all circles inside a quadrat (node) and all of its child nodes.
+      To do this, we first store all the nodes in an array and then start to work our
+      way through the nodes in Post-Order (https://www.geeksforgeeks.org/tree-traversals-inorder-preorder-and-postorder/)
+      and hand the radius of the leaf nodes upwards to their parent nodes. Since the array
+      consists of references to the original objects inside the quadtree, all modifications
+      made to them will be present in the quadtree object. (variable: qtree)
+    */ 
 
-    // https://github.com/d3/d3-3.x-api-reference/blob/master/Quadtree-Geom.md#visit
+    let next = [];
+    // travers the quadtree in Pre-Order and push all nodes into an array
     qtree.visit(function(quad) {
-      // push all quadrats into an array
       next.push(quad)
     })
 
+    /* Since d3v3 does not have a visitAfter()-method, like more recent versions do,
+      (https://github.com/d3/d3-quadtree/blob/master/src/visitAfter.js) which traverses 
+      the quadtree in post-order, we have to implement one ourselves. I am basically just
+      taking the last element of the array, while there still is one, and check if it is
+      leaf node. If it is, take the point's radius and assign it to the quadrat which
+      contains it. If it's not a leaf node, check the quadrat for child nodes, take the
+      biggest of their radii and assign it to the current quadrat. Every quadrat can only
+      have up to four (4) child nodes (topleft, topright, bottomleft, bottomright).
+    */
+
+    // take last item of the array and check if its a leaf
     while (quad = next.pop()) {
-      // take last item of the array and check if its a leaf
       if (quad.point) {
+        // assign radius attribute to quadrat and continue with next iteration
         quad.r = quad.point.r
-        // jump to next iteration if quad has a point attached
         continue
       }
-      // if quad is not a leaf, iterate over its children
-      // and determine the biggest radius inside the current quad
+      // if quad is not a leaf, iterate over its children and determine the biggest radius
       for (let i = quad.r = 0; i < 4; ++i) {
         if (quad.nodes[i] && quad.nodes[i].r > quad.r) {
           quad.r = quad.nodes[i].r
         }
       }
     }
-    //
+
+    /* The following algorithm implements the clustering of circles that are intersecting.
+      Parts of the code are generously borrowed from and/or hugely inspired by Andrew Reid's
+      excellent Marker Clustering example (https://bl.ocks.org/Andrew-Reid/21ff4b57267fa91dacc57ef1ccb7afb3)
+      and his d3-fuse library (https://github.com/Andrew-Reid/d3-fuse).
+      For every point in our data, visit each node in the quadtree and check if the point lies
+      within or within one radius distance of the quadrat. If this is not the case, that node's
+      child nodes will not be visited. (https://github.com/d3/d3-3.x-api-reference/blob/master/Quadtree-Geom.md#visit)
+    */
+
     for (let i in points) {
-      n1 = points[i]
-      cx = n1.x
-      cy = n1.y
-      r1 = n1.r
+      p1 = points[i]
 
       // visit each node in the quadtree
       qtree.visit(function(quad, x0, y0, x1, y1) {
-        let n2 = quad.point,
-            r  = r1 + quad.r;
+        let p2 = quad.point,
+            r  = p1.r + quad.r;
 
-        if (n2) {
-          if (n2.index > n1.index && n1.a && n2.a) {
-            let x = cx - n2.x,
-                y = cy - n2.y,
+        if (p2) {
+          if (p2.index > p1.index && p1.a && p2.a) {
+
+            let x = p2.x - p1.x,
+                y = p2.y - p1.y,
+                l = x * x + y * y,
                 a, b;
 
             // check for circle-circle intersection
-            // http://mathworld.wolfram.com/Circle-CircleIntersection.html
-            if (x * x + y * y < r * r) {
+            // https://www.youtube.com/watch?v=hYDRUES1DSM
+            if (Math.sqrt(l) < (p1.r + p2.r)) {
 
               // figure out which circle is the bigger one (by area)
-              if (n2.a > n1.a) {
-                a = n2
-                b = n1
-              }
-              else {
-                a = n1
-                b = n2
-              }
+              if (p2.a > p1.a) {a = p2, b = p1}
+              else {            a = p1, b = p2}
 
               // calculate new weighted center point of merged circle
               a.x = (a.x * a.a + b.x * b.a) / (a.a + b.a)
@@ -197,15 +218,20 @@ function draw_map(config) {
               a.count += b.count
               a.a += b.a
               a.r = Math.sqrt(a.a / pi)
+              if (a.r > quad.r) quad.r = a.r
 
               b.a = 0
               b.r = 0
             }
           }
         }
-      // check if circle lies outside of the quad's bounding box
-      // if this returns true, child nodes of the quad are not going to be visited
-      return x0 > cx + r || x1 < cx - r || y0 > cy + r || y1 < cy - r
+
+      /* Check if circle lies outside of the quad's bounding box.
+        If this returns true, child nodes of the quad are not going to be visited.
+        The combined radius r is used as a buffer, since a point can lie near or
+        on the boundary of a quadrat.
+      */
+      return x0 > p1.x + r || x1 < p1.x - r || y0 > p1.y + r || y1 < p1.y - r
 
       })
     }
@@ -231,6 +257,27 @@ function draw_map(config) {
             'stroke-width': `${0.5/Math.sqrt(config.scale)}px`,
           })
           .style('opacity', 0.7);
+    
+    console.log('updated')
+
+    // circs.on('mouseenter', function(d) {
+    //   d3.select(this)
+    //     .attr('r', d.r * 1.3)
+    //     .style('fill', 'yellow')
+    //   })
+
+    // .on('mouseout', function(d) {
+    //   d3.select(this)
+    //     .attr('r', d.r)
+    //     .style('fill', function() {
+    //       let col = 'green'
+    //       if (d.count > 3) col = 'blue'
+    //       if (d.count > 5) col = 'red'
+    //       return col
+    //     })
+    //   })
+
+
 /* 
     circs.on('click', function() {
       console.log('count', this.__data__.count)
