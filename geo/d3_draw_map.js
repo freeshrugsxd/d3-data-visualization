@@ -3,7 +3,6 @@ function draw_map(config) {
       mapClass = `map_${divClass}`,
       boundClass = `bounds_${mapClass}`,
       divClassSel = `.${divClass}`,
-      mapClassSel = `.${mapClass}`,
       boundClassSel = `.${boundClass}`,
       width  = $(divClassSel).width(),
       height = config.height,
@@ -57,7 +56,6 @@ function draw_map(config) {
         'stroke-opacity': 0.5
       })
   }
-
   let scaleRad = d3.scale.pow()
     .domain([1, 100])
     .range([1, 10])
@@ -81,20 +79,12 @@ function draw_map(config) {
         .attr('d', path)
         .style({ fill: 'silver', stroke: 'white' });
 
-
-  // let ciddies = mainGrp.selectAll('.cities')
-  //   .data(config.features.cities)
-  //   .enter()
-  //     .append('circle')
-  //       .attr('')
-  //       .attr('class', 'cities')
-
-
-
-        // convenience function to calculate the quadtree
+  // convenience function to calculate the quadtree
   let quadtree = d3.geom.quadtree()
     .x(d => d.x)
     .y(d => d.y)
+
+  update(config)
 
   // update the map after zooming in
   function update(config) {
@@ -110,7 +100,7 @@ function draw_map(config) {
 
       // assign radius and x & y coords
       // we want r to become smaller (or stay the same, propotionally) when we zoom in
-      points[i].r = scaleRad(d.properties.value) * (1 / Math.sqrt(config.scale))
+      points[i].r = scaleRad(d.properties.value) * (0.8 / Math.sqrt(config.scale))
 
       // the data is stored as WGS84 lat/lon, so we need to project them
       // to our local coordinate system (x, y)
@@ -241,11 +231,11 @@ function draw_map(config) {
             r : d => d.r,
             cx: d => d.x || -1e9, // off the viewport if its on the
             cy: d => d.y || -1e9, // far side of the globe
-            fill: 'green',
-            stroke: 'black',
-            'stroke-width': `${0.5/Math.sqrt(config.scale)}px`,
+            fill: 'aqua',
+            stroke: 'teal',
+            'stroke-width': `${1/Math.sqrt(config.scale)}px`,
           })
-          .style('opacity', 0.9);
+          .style('opacity', 0.7);
 
 
 /*
@@ -303,6 +293,4 @@ function draw_map(config) {
       update(config)
     }
   }
-
-  update(config)
 }
