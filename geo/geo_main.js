@@ -11,7 +11,6 @@ let map = (function(){
     */    
     jsonFiles = [
         'geo/point.data.json',              // point data set containing random values
-        'geo/cities.json',                  // capitals and world cities
         'geo/world.boundaries.min.json',    // world country borders geoJSON
         'geo/provs.min.topo.json'           // world province borders topoJSON
     ]
@@ -42,7 +41,7 @@ let map = (function(){
     // config_array.push(jQuery.extend(true, {}, config_template))
     // config_array.push(jQuery.extend(true, {}, config_template))
 
-    function init(error, data, cities, countries, provinces) {
+    function init(error, data, countries, provinces) {
         /*  Process the contents of all json files. 
             The data parameter is a point feature collection containing ~4.6k points with
             a random value attached (integer between 1 and 10). 
@@ -59,7 +58,6 @@ let map = (function(){
         config_array[0].data       = data.features
         config_array[0].features.countries = countries.features
         config_array[0].features.provinces = provinces.features
-        config_array[0].features.cities    = cities.features
         config_array[0].projection = 'equirect'
         config_array[0].graticule  = true
 /* 
