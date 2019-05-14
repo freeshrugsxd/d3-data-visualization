@@ -1,102 +1,89 @@
+/* We use online map tiles as a background map. This means less computing on the
+  client side and therefore faster loading times and reduced lag on slower or older
+  machines. 
+
+  Tiles are image files that are indexed by their x/y-offset and the zoom
+  level at which they are shown. These parameters are passed via URL.
+*/
+
+
 function draw_map(config) {
-  let divClass = config.div_class,
-      mapClass = `map_${divClass}`,
-      boundClass = `bounds_${mapClass}`,
-      divClassSel = `.${divClass}`,
-      boundClassSel = `.${boundClass}`,
-      width = $(divClassSel).width(),
-      height = config.height,
+  let divId      = config.div_id,
+      mapId      = `map_${divId}`,
+      divIdSel   =    `#${divId}`,
+      circClass  = `${mapId}_circle`,
+      circClassSel = `.${circClass}`,
+      
+      width      = config.width || $(divIdSel).width(),
+      opacity    = config.opacity || 1,
+      height     = config.height,
+      my_tile    = config.tile,
+      circCol    = config.color,
+      circStroke = config.stroke,
+
       pi = Math.PI;
 
-  config.scale = 1024
-
-  $(divClassSel).html('')
+  $(divIdSel).html('')
 
   // projection library:
   const projections = {
-    mercator : d3.geo.mercator().scale(164),
-    equirect : d3.geo.equirectangular(),
-    globe    : d3.geo.orthographic()
-                 .clipAngle(90)
-                 .scale(200)
-                 .rotate([0, -25]),
+      mercator : d3.geo.mercator(),
+      equirect : d3.geo.equirectangular(),
   };
 
+  const tile_urls = {
+    // https://wiki.openstreetmap.org/wiki/Tiles
+    dark : d => `https://cartodb-basemaps-${Math.floor(Math.random()*4+1)}.global.ssl.fastly.net/dark_all/${d[2]}/${d[0]}/${d[1]}.png`,
+    light: d => `https://cartodb-basemaps-${Math.floor(Math.random()*4+1)}.global.ssl.fastly.net/light_all/${d[2]}/${d[0]}/${d[1]}.png`,
+    ocean: d => `https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/${d[2]}/${d[0]}/${d[1]}.png`,
+    wiki : d => `https://maps.wikimedia.org/osm-intl/${d[2]}/${d[0]}/${d[1]}.png`,
+    bw   : d => `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${d[0]}/${d[1]}.png`,
+    meeks: d => `http://a.tiles.mapbox.com/v3/elijahmeeks.map-zm593ocx/${d[2]}/${d[0]}/${d[1]}.png`
+  }
+
   // convenience function to project any data to the specified projection
+  // scale: https://www.wikiwand.com/en/Mercator_projection#/Alternative_expressions
   let proj = projections[config.projection]
-    .scale(width / 2 / Math.PI)
-    .translate([width / 2, height / 2])
+      .scale(width / 2 / pi)
+      .translate([width / 2, height / 2])
 
-
-  // convenience function to draw boundaries
-  let path = d3.geo.path()
-    .projection(proj)
-
-  let center = proj([0, 15])
+  let center = proj([0, 15])  // center map on North Africa/Europe
 
   let tile = d3.geo.tile()
       .size([width, height]);
 
   let zoom = d3.behavior.zoom()
-    .scale(proj.scale() * 2 * Math.PI)
-    .scaleExtent([1024, 1 << 16])
-    .translate([width - center[0], height - center[1]])
-    .on('zoom', zoomed);
+      .scale(proj.scale() * 2 * pi)
+      .scaleExtent([1024, 1 << 16])
+      .translate([width - center[0], height - center[1]])
+      .on('zoom', zoomed);
 
-  let svg = d3.select(divClassSel)
-    .append('svg')
-      .attr({ width: width, height: height })
-      .call(zoom);
+  // recenter projection after zoom is configured to make it work correctly when
+  // scaling and translating our circles
+  proj.translate([0, 0])
 
-  let raster = svg.append('g'),
-      vector = svg.append('g');
+  let svg = d3.select(divIdSel)
+      .append('svg')
+        .attr({ width: width, height: height, class: mapId})
+        .call(zoom);
+
+  let raster = svg.append('g'),  // group for tile images
+      vector = svg.append('g');  // group for circles
 
   let scaleRad = d3.scale.pow()
-    .domain([1, 100])
-    .range([1, 10])
+      .domain([1, 350])
+      .range([2, 10])
   
   // convenience function to calculate the quadtree
   let quadtree = d3.geom.quadtree()
-    .x(d => d.x)
-    .y(d => d.y)
+      .x(d => d.x)
+      .y(d => d.y)
 
   update(config)
   zoomed()
-  function zoomed() {
 
-    let t = zoom.translate(),
-        s = zoom.scale();
-
-    let tiles = tile.scale(s).translate(t)()
-
-    proj.translate([0, 0])
-        .scale(s / 2 / pi)
-
-    vector.attr('transform', `translate(${t[0]} , ${t[1]})`)
-
-    image = raster.attr('transform', `scale(${tiles.scale})translate(${tiles.translate})`)
-      .selectAll('image')
-        .data(tiles, d => d)
-
-    image.exit().remove()
-
-    image.enter()
-      .append('image')
-        .attr('xlink:href', d => `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${d[0]}/${d[1]}.png`)
-        .attr('width', 1)
-        .attr('height', 1)
-        .attr('x', d => d[0])
-        .attr('y', d => d[1])
-
-    if (config.scale != s) {
-      config.scale = s
-      update(config)
-    }
-  }
-
-
-  // update the map after zooming in
   function update(config) {
+    // on every update: calculate the clustered markers and draw them as circles onto the map
 
     let data = config.data.features,
       points = Array(data.length);
@@ -106,36 +93,31 @@ function draw_map(config) {
       points[i] = {}
       points[i].index = i
       points[i].count = 1
+      
+      points[i].r = scaleRad(d.properties.value)  // assign scaled radius
 
-      // assign radius and x & y coords
-      // we want r to become smaller (or stay the same, propotionally) when we zoom in
-      points[i].r = scaleRad(d.properties.value * 2)
-
-      // the data is stored as WGS84 lat/lon, so we need to project them
-      // to our local coordinate system (x, y)
+      // project lat / lon data to x,y values in our projection
       points[i].x = proj(d.geometry.coordinates)[0]
       points[i].y = proj(d.geometry.coordinates)[1]
-
-      // calculate the area of the circle
-      points[i].a = pi * (points[i].r * points[i].r)
+      
+      points[i].a = pi * (points[i].r * points[i].r)  // calculate the area of the circle
     })
-
-    // create quadtree
-    qtree = quadtree(points)
     
     /* The following algorithm is used to find and assign the maximum circle radii for 
-      every quadrat in the quadtree. Only leaf nodes have a point object attached, 
-      which holds the radius for the corrisponding point. Our goal is to find the 
-      maximum radius of all circles inside a quadrat (node) and all of its child nodes.
+      every node in the quadtree. Only leaf nodes have a point object attached, 
+      which holds the radius for the corresponding point. Our goal is to find the 
+      maximum radius of all circles inside a node and all of its child nodes.
       To do this, we first store all the nodes in an array and then start to work our
       way through the nodes in Post-Order (https://www.geeksforgeeks.org/tree-traversals-inorder-preorder-and-postorder/)
       and hand the radius of the leaf nodes upwards to their parent nodes. Since the array
-      consists of references to the original objects inside the quadtree, all modifications
-      made to them will be present in the quadtree object. (variable: qtree)
+      consists of references to the original objects inside the node, all modifications
+      made to them will be present in the original node. (variable: qtree)
     */ 
 
+    qtree = quadtree(points)  // calculate quadtree
+
     let next = [];
-    // travers the quadtree in Pre-Order and push all nodes into an array
+    // traverse the quadtree in Pre-Order and push all nodes into an array
     qtree.visit(function(quad) {
       next.push(quad)
     })
@@ -144,17 +126,16 @@ function draw_map(config) {
       (https://github.com/d3/d3-quadtree/blob/master/src/visitAfter.js) which traverses 
       the quadtree in post-order, we have to implement one ourselves. I am basically just
       taking the last element of the array, while there still is one, and check if it is
-      leaf node. If it is, take the point's radius and assign it to the quadrat which
-      contains it. If it's not a leaf node, check the quadrat for child nodes, take the
-      biggest of their radii and assign it to the current quadrat. Every quadrat can only
-      have up to four (4) child nodes (topleft, topright, bottomleft, bottomright).
+      leaf node. If it is, take the point's radius and assign it to its parent node.
+      If it's not a leaf node, check it for child nodes, take the biggest of their radii 
+      and assign it to the current node. Every node can only have up to four (4) child 
+      nodes (topleft, topright, bottomleft, bottomright).
     */
 
     // take last item of the array and check if its a leaf
     while (quad = next.pop()) {
-      quad.visitedBy = []
       if (quad.point) {
-        // assign radius attribute to quadrat and continue with next iteration
+        // assign radius attribute to node and continue with next iteration
         quad.r = quad.point.r
         continue
       }
@@ -229,20 +210,63 @@ function draw_map(config) {
       oldLen = points.length  // save number of points for next iteration
     }
 
-    vector.selectAll('circle').remove()
+    vector.selectAll(circClassSel).remove()
+    
     // add circles to the map
-    let circs = vector.selectAll('circle')
+    let circs = vector.selectAll(circClassSel)
       .data(points)
       .enter()
         .append('circle')
-          .attr('class', 'circClass')
+          .attr('class', circClass)
           .attr({
             r : d => d.r,
-            cx: d => d.x || -1e9, // off the viewport if its on the
+            cx: d => d.x || -1e9, // off the view port if its on the
             cy: d => d.y || -1e9, // far side of the globe
-            fill: 'aqua',
-            stroke: 'teal',
+            fill: circCol,
+            stroke: circStroke,
+            opacity : opacity
           })
-          .style('opacity', 0.9);
+  }
+
+  function zoomed() {
+    // On zoom: move and scale background tiles and circles appropriately
+    let t = zoom.translate(),
+        s = zoom.scale();
+
+    let tiles = tile.scale(s).translate(t)()
+
+    proj.scale(s / 2 / pi)
+
+    vector.attr('transform', `translate(${t[0]} , ${t[1]})`)
+    vector.selectAll('circle')
+        .attr('r', d => d.r)
+
+    image = raster.attr('transform', `scale(${tiles.scale})translate(${tiles.translate})`)
+      .selectAll('image')
+        .data(tiles, d => d)
+
+    image.exit().remove()
+
+    image.enter()
+      .append('image')
+        .attr('xlink:href', tile_urls[my_tile])
+        .attr('width', 1)
+        .attr('height', 1)
+        .attr('x', d => d[0])
+        .attr('y', d => d[1])
+
+    if (config.scale != s) {
+      config.scale = s
+      update(config)
+    }
   }
 }
+
+
+/*  ALTERNATIVE TILE TEMPLATES:
+OSM Black & White: `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${d[0]}/${d[1]}.png`
+Wikimedia maps: `https://maps.wikimedia.org/osm-intl/${d[2]}/${d[0]}/${d[1]}.png`
+ArcMap Ocean: `https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/${d[2]}/${d[0]}/${d[1]}.png`
+light map: `https://cartodb-basemaps-${Math.floor(Math.random()*4+1)}.global.ssl.fastly.net/light_all/${d[2]}/${d[0]}/${d[1]}.png`
+dark map:  `https://cartodb-basemaps-${Math.floor(Math.random()*4+1)}.global.ssl.fastly.net/dark_all/${d[2]}/${d[0]}/${d[1]}.png`
+*/
