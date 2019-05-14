@@ -1,23 +1,6 @@
 let map = (function(){
 
-    let q = d3.queue();
-    /* 
-        the queue library is used to read the contents of multiple files concurrently 
-        instead of asynchronously. This is preferable over the alternative of having n
-        nested d3.json calls. The content of all deferred files will be read and then 
-        passed to the callback specified by the await() function.
-        see: https://github.com/d3/d3-queue        
-        code: libs/d3-queue.v3.min.js
-    */    
-    jsonFiles = [
-        'geo/point.data.json',              // point data set containing random values
-        'geo/world.boundaries.min.json',    // world country borders geoJSON
-        'geo/provs.min.topo.json'           // world province borders topoJSON
-    ]
-
-    for (let i in jsonFiles) q.defer(d3.json, jsonFiles[i])
-
-    q.await(init)  // pass all json files to init
+    d3.json('geo/point.data.json', init)
 
     // create configuration template object that holds the settings' default values
     let config_template  = {
@@ -41,7 +24,7 @@ let map = (function(){
     // config_array.push(jQuery.extend(true, {}, config_template))
     // config_array.push(jQuery.extend(true, {}, config_template))
 
-    function init(error, data, countries, provinces) {
+    function init(error, data) {
         /*  Process the contents of all json files. 
             The data parameter is a point feature collection containing ~4.6k points with
             a random value attached (integer between 1 and 10). 
@@ -51,14 +34,11 @@ let map = (function(){
         if (error) throw error;
 
         // convert the topoJSON Topology to geoJSON FeatureCollection and grab its features
-        provinces = topojson.feature(provinces, provinces.objects.provs)
 
         // add data and specify configuration for each chart
         config_array[0].div_class  = 'map1'
-        config_array[0].data       = data.features
-        config_array[0].features.countries = countries.features
-        config_array[0].features.provinces = provinces.features
-        config_array[0].projection = 'equirect'
+        config_array[0].data       = data
+        config_array[0].projection = 'mercator'
         config_array[0].graticule  = true
 /* 
         config_array[1].div_class  = 'map3'

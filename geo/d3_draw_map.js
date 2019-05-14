@@ -4,29 +4,17 @@ function draw_map(config) {
       boundClass = `bounds_${mapClass}`,
       divClassSel = `.${divClass}`,
       boundClassSel = `.${boundClass}`,
-      width  = $(divClassSel).width(),
+      width = $(divClassSel).width(),
       height = config.height,
-      showGrid = config.graticule,
-      rotation = config.rotation || [0, 0],
       pi = Math.PI;
 
-  config.scale = 1
+  config.scale = 1024
 
   $(divClassSel).html('')
 
-  let zoom = d3.behavior.zoom()
-    .on('zoom', panAndZoom);
-
-  let svg = d3.select(divClassSel)
-    .append('svg')
-      .attr({ width: width, height: height })
-      .call(zoom);
-
-  let mainGrp = svg.append('g');
-
   // projection library:
   const projections = {
-    mercator : d3.geo.mercator().scale(width / 3 / pi),
+    mercator : d3.geo.mercator().scale(164),
     equirect : d3.geo.equirectangular(),
     globe    : d3.geo.orthographic()
                  .clipAngle(90)
@@ -36,60 +24,81 @@ function draw_map(config) {
 
   // convenience function to project any data to the specified projection
   let proj = projections[config.projection]
+    .scale(width / 2 / Math.PI)
     .translate([width / 2, height / 2])
-    .rotate(rotation);
+
 
   // convenience function to draw boundaries
   let path = d3.geo.path()
-    .projection(proj);
+    .projection(proj)
 
-  if (showGrid) {
-    // draw a graticule in the background
-    let grid = d3.geo.graticule();
+  let center = proj([0, 15])
 
-    mainGrp.append('path')
-      .datum(grid)
-      .attr('d', path)
-      .style({
-        stroke: '#777',
-        'stroke-width': '.5px',
-        'stroke-opacity': 0.5
-      })
-  }
+  let tile = d3.geo.tile()
+      .size([width, height]);
+
+  let zoom = d3.behavior.zoom()
+    .scale(proj.scale() * 2 * Math.PI)
+    .scaleExtent([1024, 1 << 16])
+    .translate([width - center[0], height - center[1]])
+    .on('zoom', zoomed);
+
+  let svg = d3.select(divClassSel)
+    .append('svg')
+      .attr({ width: width, height: height })
+      .call(zoom);
+
+  let raster = svg.append('g'),
+      vector = svg.append('g');
+
   let scaleRad = d3.scale.pow()
     .domain([1, 100])
     .range([1, 10])
-
-  // add boundaries for smaller administrative areas (provinces)  
-  let provinces = mainGrp.selectAll(`${boundClassSel}_prov`)
-    .data(config.features.provinces)
-    .enter()
-      .append('path')
-        .attr('class', boundClass)
-        .attr('d', path)
-        .style({ fill: 'silver', stroke: 'white' })
-        .style('visibility', 'hidden')
-
-  // add boundaries for country level of detail
-  let countries = mainGrp.selectAll(`${boundClassSel}_country`)
-    .data(config.features.countries)
-    .enter()
-      .append('path')
-        .attr('class', boundClass)
-        .attr('d', path)
-        .style({ fill: 'silver', stroke: 'white' });
-
+  
   // convenience function to calculate the quadtree
   let quadtree = d3.geom.quadtree()
     .x(d => d.x)
     .y(d => d.y)
 
   update(config)
+  zoomed()
+  function zoomed() {
+
+    let t = zoom.translate(),
+        s = zoom.scale();
+
+    let tiles = tile.scale(s).translate(t)()
+
+    proj.translate([0, 0])
+        .scale(s / 2 / pi)
+
+    vector.attr('transform', `translate(${t[0]} , ${t[1]})`)
+
+    image = raster.attr('transform', `scale(${tiles.scale})translate(${tiles.translate})`)
+      .selectAll('image')
+        .data(tiles, d => d)
+
+    image.exit().remove()
+
+    image.enter()
+      .append('image')
+        .attr('xlink:href', d => `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${d[0]}/${d[1]}.png`)
+        .attr('width', 1)
+        .attr('height', 1)
+        .attr('x', d => d[0])
+        .attr('y', d => d[1])
+
+    if (config.scale != s) {
+      config.scale = s
+      update(config)
+    }
+  }
+
 
   // update the map after zooming in
   function update(config) {
 
-    let data = config.data,
+    let data = config.data.features,
       points = Array(data.length);
 
     // populate points array with our data
@@ -100,7 +109,7 @@ function draw_map(config) {
 
       // assign radius and x & y coords
       // we want r to become smaller (or stay the same, propotionally) when we zoom in
-      points[i].r = scaleRad(d.properties.value) * (0.8 / Math.sqrt(config.scale))
+      points[i].r = scaleRad(d.properties.value * 2)
 
       // the data is stored as WGS84 lat/lon, so we need to project them
       // to our local coordinate system (x, y)
@@ -220,9 +229,9 @@ function draw_map(config) {
       oldLen = points.length  // save number of points for next iteration
     }
 
-    mainGrp.selectAll('circle').remove()
+    vector.selectAll('circle').remove()
     // add circles to the map
-    let circs = mainGrp.selectAll('circle')
+    let circs = vector.selectAll('circle')
       .data(points)
       .enter()
         .append('circle')
@@ -233,64 +242,7 @@ function draw_map(config) {
             cy: d => d.y || -1e9, // far side of the globe
             fill: 'aqua',
             stroke: 'teal',
-            'stroke-width': `${1/Math.sqrt(config.scale)}px`,
           })
-          .style('opacity', 0.7);
-
-
-/*
-    //visualize the quadtree geometry:
-    mainGrp.selectAll('rect').remove()
-    qtree.visit( function(quad, x0, y0, x1, y1) {
-        mainGrp.append('rect')
-          .attr('transform', `translate(${x0}, ${y0})`)
-          .attr({
-            height: `${x1 - x0}px`,
-            width : `${y1 - y0}px`,
-            fill  : 'none',
-            stroke : 'black',
-            class : 'qtrect',
-            'stroke-width' : '0.05px'
-          })
-      })
-*/
-
-/* 
-    let label = mainGrp.append('g');
-    mainGrp.selectAll('text').remove()
-    label.selectAll('text')
-      .data(points)
-      .enter()
-        .append('text')
-        .text(function(d) {
-          if (d.r > 0) return `${d.count}`
-        })
-        .attr('transform', d => `translate(${d.x}, ${d.y})`)
-        .style('font-size', () => `${10 / Math.sqrt(config.scale)}px`)
-*/      
-  }
-
-  function panAndZoom() {
-    let t = d3.event.translate,
-        s = d3.event.scale;
-
-    mainGrp.attr('transform', `translate(${t})scale(${s})`)
-
-    if (config.scale != s) {
-
-      // toggle visibility of the different boundary layer based on current scale
-      if (config.scale <= 15) {
-        provinces.style('visibility', 'hidden')
-        countries.style('visibility', 'visible')
-        countries.style('stroke-width', `${1/Math.sqrt(s)}px`)
-      } else {
-        countries.style('visibility', 'hidden')
-        provinces.style('visibility', 'visible')
-        provinces.style('stroke-width', `${0.4/Math.sqrt(s)}px`)
-
-      }
-      config.scale = s
-      update(config)
-    }
+          .style('opacity', 0.9);
   }
 }
