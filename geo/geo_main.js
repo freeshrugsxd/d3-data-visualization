@@ -14,7 +14,7 @@ let map = (function(){
                         right : 50,
                        bottom : 50,
                          left : 50 },
-          features : {},
+              data : {},
     };
 
     let config_array = [],
@@ -41,7 +41,8 @@ let map = (function(){
         config_array[0].div_id     = 'map1'
         config_array[0].data       = data
         config_array[0].projection = 'mercator'
-        config_array[0].graticule  = true
+        config_array[0].opacity    = 0.7
+
 
         config_array[1].div_id     = 'map2'
         config_array[1].projection = 'mercator'
@@ -57,6 +58,7 @@ let map = (function(){
         config_array[2].tile       = 'wiki'
         config_array[2].color      = 'red'
         config_array[2].stroke     = 'black'
+        config_array[2].opacity    = 0.5
 
         redraw()
 

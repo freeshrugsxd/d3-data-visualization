@@ -31,27 +31,35 @@ function draw_map(config) {
       equirect : d3.geo.equirectangular(),
   };
 
+  // http://bl.ocks.org/jasondavies/0051a06829e72b423ba9
+  // determine x index of wrapped tiles east and west of the original map
+  let wrapX = d => (d[0] % (1 << d[2]) + (1 << d[2])) % (1 << d[2])
+
   const tile_urls = {
     // https://wiki.openstreetmap.org/wiki/Tiles
-    dark : d => `https://cartodb-basemaps-${Math.floor(Math.random()*4+1)}.global.ssl.fastly.net/dark_all/${d[2]}/${d[0]}/${d[1]}.png`,
-    light: d => `https://cartodb-basemaps-${Math.floor(Math.random()*4+1)}.global.ssl.fastly.net/light_all/${d[2]}/${d[0]}/${d[1]}.png`,
-    ocean: d => `https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/${d[2]}/${d[0]}/${d[1]}.png`,
-    wiki : d => `https://maps.wikimedia.org/osm-intl/${d[2]}/${d[0]}/${d[1]}.png`,
-    bw   : d => `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${d[0]}/${d[1]}.png`,
-    meeks: d => `http://a.tiles.mapbox.com/v3/elijahmeeks.map-zm593ocx/${d[2]}/${d[0]}/${d[1]}.png`
+    dark : d => `https://cartodb-basemaps-${Math.floor(Math.random() * 4 + 1)}.global.ssl.fastly.net/dark_all/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    light: d => `https://cartodb-basemaps-${Math.floor(Math.random() * 4 + 1)}.global.ssl.fastly.net/light_all/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    ocean: d => `https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/${d[2]}/${d[1]}/${wrapX(d)}.png`,
+    wiki : d => `https://maps.wikimedia.org/osm-intl/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    bw   : d => `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    meeks: d => `http://a.tiles.mapbox.com/v3/elijahmeeks.map-zm593ocx/${d[2]}/${wrapX(d)}/${d[1]}.png`
   }
 
   // convenience function to project any data to the specified projection
-  // scale: https://www.wikiwand.com/en/Mercator_projection#/Alternative_expressions
+  // mercator scale: https://www.wikiwand.com/en/Mercator_projection#/Alternative_expressions
   let proj = projections[config.projection]
       .scale(width / 2 / pi)
       .translate([width / 2, height / 2])
 
   let center = proj([0, 15])  // center map on North Africa/Europe
 
+  // initiate tiles
+  // overflow method thanks to Jason Davies (http://bl.ocks.org/jasondavies/0051a06829e72b423ba9)
   let tile = d3.geo.tile()
-      .size([width, height]);
+      .size([width, height])
+      .overflow([true, false]);
 
+  // initiate zoom and center map
   let zoom = d3.behavior.zoom()
       .scale(proj.scale() * 2 * pi)
       .scaleExtent([1024, 1 << 16])
