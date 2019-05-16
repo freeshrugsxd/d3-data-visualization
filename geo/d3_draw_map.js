@@ -62,7 +62,7 @@ function draw_map(config) {
   // initiate zoom and center map
   let zoom = d3.behavior.zoom()
       .scale(proj.scale() * 2 * pi)
-      .scaleExtent([1024, 1 << 16])
+      .scaleExtent([width, 1 << 16])
       .translate([width - center[0], height - center[1]])
       .on('zoom', zoomed);
 
