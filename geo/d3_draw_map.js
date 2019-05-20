@@ -13,6 +13,8 @@ function draw_map(config) {
       divIdSel   =    `#${divId}`,
       circClass  = `${mapId}_circle`,
       circClassSel = `.${circClass}`,
+      ttipClass   = `tooltip_${mapId}`,    // class name for tooltip div element
+      ttipClassSel   = `.${ttipClass}`,    // selector for tooltip div element
       
       width      = config.width || $(divIdSel).width(),
       opacity    = config.opacity || 1,
@@ -24,12 +26,29 @@ function draw_map(config) {
       pi = Math.PI;
 
   $(divIdSel).html('')
+  $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
 
   // projection library:
   const projections = {
       mercator : d3.geo.mercator(),
       equirect : d3.geo.equirectangular(),
   };
+
+  // define tooltip (coords are declared later on mouse events)
+  const tooltip = d3.select('body')
+    .append('div')
+      .attr('class', ttipClass)
+      .style('position', 'absolute')
+      .style('z-index', '20')
+      .style('visibility', 'hidden')
+      .style('font-weight', 'bold')
+      .style('font-size', '10px')
+      .style('color', '#000')
+      .style('line-height', 1)
+      .style('padding', '5px')
+      .style('background', '#fff')
+      .style('border-radius', '2px')
+      .style('opacity', 0.8);
 
   // http://bl.ocks.org/jasondavies/0051a06829e72b423ba9
   // determine x index of wrapped tiles east and west of the original map
@@ -234,6 +253,17 @@ function draw_map(config) {
             stroke: circStroke,
             opacity : opacity
           })
+    circs.on('mousemove', function(d) {
+      tooltip.html(d.count)
+      .style('top',  `${d3.event.pageY + 15}px`)
+      .style('left', `${d3.event.pageX + 10}px`)
+      .style('pointer-events', 'none')
+      .style('visibility', 'visible')
+    })
+    .on('mouseout', function(d) {
+        // hide tooltip and remove its content
+        tooltip.html('').style('visibility', 'hidden');
+    })
   }
 
   function zoomed() {
@@ -269,12 +299,3 @@ function draw_map(config) {
     }
   }
 }
-
-
-/*  ALTERNATIVE TILE TEMPLATES:
-OSM Black & White: `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${d[0]}/${d[1]}.png`
-Wikimedia maps: `https://maps.wikimedia.org/osm-intl/${d[2]}/${d[0]}/${d[1]}.png`
-ArcMap Ocean: `https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/${d[2]}/${d[0]}/${d[1]}.png`
-light map: `https://cartodb-basemaps-${Math.floor(Math.random()*4+1)}.global.ssl.fastly.net/light_all/${d[2]}/${d[0]}/${d[1]}.png`
-dark map:  `https://cartodb-basemaps-${Math.floor(Math.random()*4+1)}.global.ssl.fastly.net/dark_all/${d[2]}/${d[0]}/${d[1]}.png`
-*/
