@@ -28,12 +28,20 @@ function draw_map(config) {
   $(divIdSel).html('')
   $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
 
+  console.log(config.data)
+  select = d3.select('#dropdown')
+
+  for (prod_type in config.data.product_types) {
+    select.append('option').attr('value', config.data.product_types[prod_type])
+  }
+
   // projection library:
   const projections = {
       mercator : d3.geo.mercator(),
       equirect : d3.geo.equirectangular(),
   };
 
+ 
   // define tooltip (coords are declared later on mouse events)
   const tooltip = d3.select('body')
     .append('div')
@@ -153,7 +161,7 @@ function draw_map(config) {
       (https://github.com/d3/d3-quadtree/blob/master/src/visitAfter.js) which traverses 
       the quadtree in post-order, we have to implement one ourselves. I am basically just
       taking the last element of the array, while there still is one, and check if it is
-      leaf node. If it is, take the point's radius and assign it to its parent node.
+      a leaf node. If so, take the point's radius and assign it to its parent node.
       If it's not a leaf node, check it for child nodes, take the biggest of their radii 
       and assign it to the current node. Every node can only have up to four (4) child 
       nodes (topleft, topright, bottomleft, bottomright).
