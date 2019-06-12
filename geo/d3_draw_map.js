@@ -10,7 +10,7 @@
 function draw_map(config) {
   let divId      = config.div_id,
       mapId      = `map_${divId}`,
-      divIdSel   =    `#${divId}`,
+      divIdSel   = `#${divId}`,
       circClass  = `${mapId}_circle`,
       circClassSel = `.${circClass}`,
       ttipClass   = `tooltip_${mapId}`,    // class name for tooltip div element
@@ -31,8 +31,10 @@ function draw_map(config) {
   console.log(config.data)
   select = d3.select('#dropdown')
 
-  for (prod_type in config.data.product_types) {
-    select.append('option').attr('value', config.data.product_types[prod_type])
+  for (let prod_type in config.data.product_types) {
+    select.append('option')
+      .attr('value', config.data.product_types[prod_type])
+      .text(config.data.product_types[prod_type])
   }
 
   // projection library:
@@ -42,6 +44,8 @@ function draw_map(config) {
   };
 
  
+
+  
   // define tooltip (coords are declared later on mouse events)
   const tooltip = d3.select('body')
     .append('div')
@@ -106,15 +110,14 @@ function draw_map(config) {
       vector = svg.append('g');  // group for circles
 
   let scaleRad = d3.scale.pow()
-      .domain([1, 350])
-      .range([2, 10])
+      .domain([1, 10000])
+      .range([1, 3])
   
   // convenience function to calculate the quadtree
   let quadtree = d3.geom.quadtree()
       .x(d => d.x)
       .y(d => d.y)
 
-  update(config)
   zoomed()
 
   function update(config) {
@@ -129,7 +132,7 @@ function draw_map(config) {
       points[i].index = i
       points[i].count = 1
       
-      points[i].r = scaleRad(d.properties.value)  // assign scaled radius
+      points[i].r = scaleRad(d.properties.num_products)  // assign scaled radius
 
       // project lat / lon data to x,y values in our projection
       points[i].x = proj(d.geometry.coordinates)[0]

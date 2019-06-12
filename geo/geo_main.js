@@ -4,7 +4,8 @@ let map = (function(){
 
     // create configuration template object that holds the settings' default values
     let config_template  = {
-            height : 450,
+            height : 400,
+             width : 800,
             div_id : 'map',        // id of the div container holding the chart
         projection : 'mercator',
               tile : 'dark',
@@ -23,8 +24,8 @@ let map = (function(){
     // push one copy of the template to the array for every time you want to call
     // draw_map on the page
     config_array.push(jQuery.extend(true, {}, config_template))
-    config_array.push(jQuery.extend(true, {}, config_template))
-    config_array.push(jQuery.extend(true, {}, config_template))
+    // config_array.push(jQuery.extend(true, {}, config_template))
+    // config_array.push(jQuery.extend(true, {}, config_template))
 
     function init(error, data) {
 
