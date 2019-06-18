@@ -1,35 +1,21 @@
 let map = (function(){
 
-    let q = d3.queue();
-    /* 
-        the queue library is used to read the contents of multiple files concurrently 
-        instead of asynchronously. This is preferable over the alternative of having n
-        nested d3.json calls. The content of all deferred files will be read and then 
-        passed to the callback specified by the await() function.
-        see: https://github.com/d3/d3-queue        
-        code: libs/d3-queue.v3.min.js
-    */    
-    jsonFiles = [
-        'geo/point.data.json',              // point data set containing random values
-        'geo/world.boundaries.min.json',    // world country borders geoJSON
-        'geo/provs.min.topo.json'           // world province borders topoJSON
-    ]
-
-    for (let i in jsonFiles) q.defer(d3.json, jsonFiles[i])
-
-    q.await(init)  // pass all json files to init
+    d3.json('geo/footprint.centroids.geo.json', init)
 
     // create configuration template object that holds the settings' default values
     let config_template  = {
-            height : 600,
-         div_class : 'map',        // class of the div container holding the chart
+            height : 500,
+             width : 1000,
+            div_id : 'map',        // id of the div container holding the chart
         projection : 'mercator',
-              grid : false,
+              tile : 'dark',
+             color : 'aqua',
+            stroke : 'teal',
             margin : {    top : 50,
                         right : 50,
                        bottom : 50,
                          left : 50 },
-          features : {},
+              data : {},
     };
 
     let config_array = [],
@@ -41,32 +27,35 @@ let map = (function(){
     // config_array.push(jQuery.extend(true, {}, config_template))
     // config_array.push(jQuery.extend(true, {}, config_template))
 
-    function init(error, data, countries, provinces) {
-        /*  Process the contents of all json files. 
-            The data parameter is a point feature collection containing ~4.6k points with
-            a random value attached (integer between 1 and 10). 
-            Next to the point data, there are two data sets that depict administrative
-            boundaries of the earth, one for every country and one for provinces. 
-        */
+    function init(error, data) {
+
         if (error) throw error;
 
-        // convert the topoJSON Topology to geoJSON FeatureCollection and grab its features
-        provinces = topojson.feature(provinces, provinces.objects.provs)
-
         // add data and specify configuration for each chart
-        config_array[0].div_class  = 'map1'
-        config_array[0].data       = data.features
-        config_array[0].features.countries = countries.features
-        config_array[0].features.provinces = provinces.features
-        config_array[0].projection = 'equirect'
-        config_array[0].graticule  = true
-/* 
-        config_array[1].div_class  = 'map3'
-        config_array[1].projection = 'mercator'
-        config_array[1].data       = data.features
-        config_array[1].features.countries = countries.features
-        config_array[1].features.provinces = provinces.features
-        config_array[1].features.cities    = cities.features */
+        config_array[0].div_id     = 'map1'
+        config_array[0].data       = data
+        config_array[0].projection = 'mercator'
+        config_array[0].opacity    = 0.7
+        config_array[0].tile       = 'light'
+        config_array[0].stroke     = 'black'
+        config_array[0].color      = 'red'
+
+        // config_array[1].div_id     = 'map2'
+        // config_array[1].projection = 'mercator'
+        // config_array[1].data       = data
+        // config_array[1].tile       = 'light'
+        // config_array[1].color      = '#8BC34A'
+        // config_array[1].stroke     = 'green'
+        // config_array[1].opacity    = 0.7
+
+        // config_array[2].div_id     = 'map3'
+        // config_array[2].projection = 'mercator'
+        // config_array[2].data       = data
+        // config_array[2].tile       = 'wiki'
+        // config_array[2].color      = 'red'
+        // config_array[2].stroke     = 'black'
+        // config_array[2].opacity    = 0.5
+
         redraw()
 
     }
@@ -82,8 +71,4 @@ let map = (function(){
 
 })()
 
-let resize_windows = function(){
-    window.dispatchEvent(new Event('resize'))
-}
-
-window.addEventListener('resize', map.render)
+//window.addEventListener('resize', map.render)

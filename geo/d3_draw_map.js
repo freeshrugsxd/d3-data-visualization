@@ -1,95 +1,128 @@
+/* We use online map tiles as a background map. This means less computing on the
+  client side and therefore faster loading times and reduced lag on slower or older
+  machines. 
+
+  Tiles are image files that are indexed by their x/y-offset and the zoom
+  level at which they are shown. These parameters are passed via URL.
+*/
+
 function draw_map(config) {
-  let divClass = config.div_class,
-      mapClass = `map_${divClass}`,
-      boundClass = `bounds_${mapClass}`,
-      divClassSel = `.${divClass}`,
-      boundClassSel = `.${boundClass}`,
-      width  = $(divClassSel).width(),
-      height = config.height,
-      showGrid = config.graticule,
-      rotation = config.rotation || [0, 0],
+  const divId      = config.div_id,
+      mapId      = `map_${divId}`,
+      divIdSel   = `#${divId}`,
+      circClass  = `${mapId}_circle`,
+      circClassSel = `.${circClass}`,
+      ttipClass   = `tooltip_${mapId}`,    // class name for tooltip div element
+      ttipClassSel   = `.${ttipClass}`,    // selector for tooltip div element
+      
+      width      = config.width || $(divIdSel).width(),
+      opacity    = config.opacity || 1,
+      height     = config.height,
+      my_tile    = config.tile,
+      circCol    = config.color,
+      circStroke = config.stroke,
+
       pi = Math.PI;
 
-  config.scale = 1
+  let scale = 0;
 
-  $(divClassSel).html('')
+  $(divIdSel).html('')
+  $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
 
-  let zoom = d3.behavior.zoom()
-    .on('zoom', panAndZoom);
+  const select = d3.select('#dropdown');
 
-  let svg = d3.select(divClassSel)
-    .append('svg')
-      .attr({ width: width, height: height })
-      .call(zoom);
-
-  let mainGrp = svg.append('g');
+  for (let prod_type in config.data.product_types) {
+    select.append('option')
+      .attr('value', config.data.product_types[prod_type])
+      .text(config.data.product_types[prod_type])
+  }
 
   // projection library:
   const projections = {
-    mercator : d3.geo.mercator().scale(width / 3 / pi),
-    equirect : d3.geo.equirectangular(),
-    globe    : d3.geo.orthographic()
-                 .clipAngle(90)
-                 .scale(200)
-                 .rotate([0, -25]),
+      mercator : d3.geo.mercator(),
+      equirect : d3.geo.equirectangular(),
+  };
+
+   
+  // define tooltip (coords are declared later on mouse events)
+  const tooltip = d3.select('body')
+    .append('div')
+      .attr('class', ttipClass)
+      .style('position', 'absolute')
+      .style('z-index', '20')
+      .style('visibility', 'hidden')
+      .style('font-weight', 'bold')
+      .style('font-size', '10px')
+      .style('color', '#000')
+      .style('line-height', 1)
+      .style('padding', '5px')
+      .style('background', '#fff')
+      .style('border-radius', '2px')
+      .style('opacity', 0.8);
+
+  // http://bl.ocks.org/jasondavies/0051a06829e72b423ba9
+  // determine x index of wrapped tiles east and west of the original map
+  const wrapX = d => (d[0] % (1 << d[2]) + (1 << d[2])) % (1 << d[2]);
+
+  const tile_urls = {
+    // https://wiki.openstreetmap.org/wiki/Tiles
+    dark : d => `https://cartodb-basemaps-${Math.floor(Math.random() * 4 + 1)}.global.ssl.fastly.net/dark_all/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    light: d => `https://cartodb-basemaps-${Math.floor(Math.random() * 4 + 1)}.global.ssl.fastly.net/light_all/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    ocean: d => `https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/${d[2]}/${d[1]}/${wrapX(d)}.png`,
+    wiki : d => `https://maps.wikimedia.org/osm-intl/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    bw   : d => `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    meeks: d => `http://a.tiles.mapbox.com/v3/elijahmeeks.map-zm593ocx/${d[2]}/${wrapX(d)}/${d[1]}.png`
   };
 
   // convenience function to project any data to the specified projection
+  // mercator scale: https://www.wikiwand.com/en/Mercator_projection#/Alternative_expressions
   let proj = projections[config.projection]
-    .translate([width / 2, height / 2])
-    .rotate(rotation);
+      .scale(width / 2 / pi)
+      .translate([width / 2, height / 2])
 
-  // convenience function to draw boundaries
-  let path = d3.geo.path()
-    .projection(proj);
+  let center = proj([0, 15])  // center map on North Africa/Europe
 
-  if (showGrid) {
-    // draw a graticule in the background
-    let grid = d3.geo.graticule();
+  // initiate tiles
+  // overflow method thanks to Jason Davies (http://bl.ocks.org/jasondavies/0051a06829e72b423ba9)
+  let tile = d3.geo.tile()
+      .size([width, height])
+      .overflow([true, false]);
 
-    mainGrp.append('path')
-      .datum(grid)
-      .attr('d', path)
-      .style({
-        stroke: '#777',
-        'stroke-width': '.5px',
-        'stroke-opacity': 0.5
-      })
-  }
-  let scaleRad = d3.scale.pow()
-    .domain([1, 100])
-    .range([1, 10])
+  // initiate zoom and center map
+  let zoom = d3.behavior.zoom()
+      .scale(proj.scale() * 2 * pi)
+      .scaleExtent([width, 1 << 16])
+      .translate([width - center[0], height - center[1]])
+      .on('zoom', zoomed);
 
-  // add boundaries for smaller administrative areas (provinces)  
-  let provinces = mainGrp.selectAll(`${boundClassSel}_prov`)
-    .data(config.features.provinces)
-    .enter()
-      .append('path')
-        .attr('class', boundClass)
-        .attr('d', path)
-        .style({ fill: 'silver', stroke: 'white' })
-        .style('visibility', 'hidden')
+  // recenter projection after zoom is configured to make it work correctly when
+  // scaling and translating our circles
+  proj.translate([0, 0])
 
-  // add boundaries for country level of detail
-  let countries = mainGrp.selectAll(`${boundClassSel}_country`)
-    .data(config.features.countries)
-    .enter()
-      .append('path')
-        .attr('class', boundClass)
-        .attr('d', path)
-        .style({ fill: 'silver', stroke: 'white' });
+  let svg = d3.select(divIdSel)
+      .append('svg')
+        .attr("viewBox", "0 0 " + width + " " + height )  
+      //.attr({ width: width, height: height, class: mapId})
+        .call(zoom);
 
+  let raster = svg.append('g'),  // group for tile images
+      vector = svg.append('g');  // group for circles
+
+  let scaleRad = d3.scale.sqrt()
+      .domain([1, 10000])
+      .range([1, 7])
+  
   // convenience function to calculate the quadtree
   let quadtree = d3.geom.quadtree()
-    .x(d => d.x)
-    .y(d => d.y)
+      .x(d => d.x)
+      .y(d => d.y)
 
-  update(config)
+  zoomed()
 
-  // update the map after zooming in
   function update(config) {
+    // on every update: calculate the clustered markers and draw them as circles onto the map
 
-    let data = config.data,
+    let data = config.data.features,
       points = Array(data.length);
 
     // populate points array with our data
@@ -97,36 +130,31 @@ function draw_map(config) {
       points[i] = {}
       points[i].index = i
       points[i].count = 1
+      
+      points[i].r = scaleRad(d.properties.num_products)  // assign scaled radius
 
-      // assign radius and x & y coords
-      // we want r to become smaller (or stay the same, propotionally) when we zoom in
-      points[i].r = scaleRad(d.properties.value) * (0.8 / Math.sqrt(config.scale))
-
-      // the data is stored as WGS84 lat/lon, so we need to project them
-      // to our local coordinate system (x, y)
+      // project lat / lon data to x,y values in our projection
       points[i].x = proj(d.geometry.coordinates)[0]
       points[i].y = proj(d.geometry.coordinates)[1]
-
-      // calculate the area of the circle
-      points[i].a = pi * (points[i].r * points[i].r)
+      
+      points[i].a = pi * (points[i].r * points[i].r)  // calculate the area of the circle
     })
-
-    // create quadtree
-    qtree = quadtree(points)
     
     /* The following algorithm is used to find and assign the maximum circle radii for 
-      every quadrat in the quadtree. Only leaf nodes have a point object attached, 
-      which holds the radius for the corrisponding point. Our goal is to find the 
-      maximum radius of all circles inside a quadrat (node) and all of its child nodes.
+      every node in the quadtree. Only leaf nodes have a point object attached, 
+      which holds the radius for the corresponding point. Our goal is to find the 
+      maximum radius of all circles inside a node and all of its child nodes.
       To do this, we first store all the nodes in an array and then start to work our
       way through the nodes in Post-Order (https://www.geeksforgeeks.org/tree-traversals-inorder-preorder-and-postorder/)
       and hand the radius of the leaf nodes upwards to their parent nodes. Since the array
-      consists of references to the original objects inside the quadtree, all modifications
-      made to them will be present in the quadtree object. (variable: qtree)
+      consists of references to the original objects inside the node, all modifications
+      made to them will be present in the original node. (variable: qtree)
     */ 
 
+    qtree = quadtree(points)  // calculate quadtree
+
     let next = [];
-    // travers the quadtree in Pre-Order and push all nodes into an array
+    // traverse the quadtree in Pre-Order and push all nodes into an array
     qtree.visit(function(quad) {
       next.push(quad)
     })
@@ -135,17 +163,16 @@ function draw_map(config) {
       (https://github.com/d3/d3-quadtree/blob/master/src/visitAfter.js) which traverses 
       the quadtree in post-order, we have to implement one ourselves. I am basically just
       taking the last element of the array, while there still is one, and check if it is
-      leaf node. If it is, take the point's radius and assign it to the quadrat which
-      contains it. If it's not a leaf node, check the quadrat for child nodes, take the
-      biggest of their radii and assign it to the current quadrat. Every quadrat can only
-      have up to four (4) child nodes (topleft, topright, bottomleft, bottomright).
+      a leaf node. If so, take the point's radius and assign it to its parent node.
+      If it's not a leaf node, check it for child nodes, take the biggest of their radii 
+      and assign it to the current node. Every node can only have up to four (4) child 
+      nodes (topleft, topright, bottomleft, bottomright).
     */
 
     // take last item of the array and check if its a leaf
     while (quad = next.pop()) {
-      quad.visitedBy = []
       if (quad.point) {
-        // assign radius attribute to quadrat and continue with next iteration
+        // assign radius attribute to node and continue with next iteration
         quad.r = quad.point.r
         continue
       }
@@ -167,7 +194,6 @@ function draw_map(config) {
     */
       
     let oldLen = 0;
-
     while (true) {
       for (let i in points) {
         p1 = points[i]
@@ -181,12 +207,11 @@ function draw_map(config) {
             if (p2.index != p1.index && p1.a && p2.a) {
               let x = p2.x - p1.x,
                   y = p2.y - p1.y,
-                  l = Math.sqrt(x * x + y * y),
                   a, b;
 
               // check for circle-circle intersection
               // https://www.youtube.com/watch?v=hYDRUES1DSM
-              if (l < (p1.r + p2.r)) {
+              if (Math.sqrt(x * x + y * y) < (p1.r + p2.r)) {
 
                 // figure out which circle is the bigger one (by area)
                 if (p2.a > p1.a) {a = p2, b = p1}
@@ -220,76 +245,64 @@ function draw_map(config) {
       oldLen = points.length  // save number of points for next iteration
     }
 
-    mainGrp.selectAll('circle').remove()
+    vector.selectAll(circClassSel).remove()
+    
     // add circles to the map
-    let circs = mainGrp.selectAll('circle')
+    let circs = vector.selectAll(circClassSel)
       .data(points)
       .enter()
         .append('circle')
-          .attr('class', 'circClass')
+          .attr('class', circClass)
           .attr({
             r : d => d.r,
-            cx: d => d.x || -1e9, // off the viewport if its on the
+            cx: d => d.x || -1e9, // off the view port if its on the
             cy: d => d.y || -1e9, // far side of the globe
-            fill: 'aqua',
-            stroke: 'teal',
-            'stroke-width': `${1/Math.sqrt(config.scale)}px`,
+            fill: circCol,
+            stroke: circStroke,
+            opacity : opacity
           })
-          .style('opacity', 0.7);
-
-
-/*
-    //visualize the quadtree geometry:
-    mainGrp.selectAll('rect').remove()
-    qtree.visit( function(quad, x0, y0, x1, y1) {
-        mainGrp.append('rect')
-          .attr('transform', `translate(${x0}, ${y0})`)
-          .attr({
-            height: `${x1 - x0}px`,
-            width : `${y1 - y0}px`,
-            fill  : 'none',
-            stroke : 'black',
-            class : 'qtrect',
-            'stroke-width' : '0.05px'
-          })
-      })
-*/
-
-/* 
-    let label = mainGrp.append('g');
-    mainGrp.selectAll('text').remove()
-    label.selectAll('text')
-      .data(points)
-      .enter()
-        .append('text')
-        .text(function(d) {
-          if (d.r > 0) return `${d.count}`
-        })
-        .attr('transform', d => `translate(${d.x}, ${d.y})`)
-        .style('font-size', () => `${10 / Math.sqrt(config.scale)}px`)
-*/      
+    circs.on('mousemove', function(d) {
+      tooltip.html(d.count)
+      .style('top',  `${d3.event.pageY + 15}px`)
+      .style('left', `${d3.event.pageX + 10}px`)
+      .style('pointer-events', 'none')
+      .style('visibility', 'visible')
+    })
+    .on('mouseout', function(d) {
+        // hide tooltip and remove its content
+        tooltip.html('').style('visibility', 'hidden');
+    })
   }
 
-  function panAndZoom() {
-    let t = d3.event.translate,
-        s = d3.event.scale;
+  function zoomed() {
+    // On zoom: move and scale background tiles and circles appropriately
+    let t = zoom.translate(),
+        s = zoom.scale();
 
-    mainGrp.attr('transform', `translate(${t})scale(${s})`)
+    let tiles = tile.scale(s).translate(t)()
 
-    if (config.scale != s) {
+    proj.scale(s / 2 / pi)
 
-      // toggle visibility of the different boundary layer based on current scale
-      if (config.scale <= 15) {
-        provinces.style('visibility', 'hidden')
-        countries.style('visibility', 'visible')
-        countries.style('stroke-width', `${1/Math.sqrt(s)}px`)
-      } else {
-        countries.style('visibility', 'hidden')
-        provinces.style('visibility', 'visible')
-        provinces.style('stroke-width', `${0.4/Math.sqrt(s)}px`)
+    vector.attr('transform', `translate(${t[0]} , ${t[1]})`)
+    vector.selectAll('circle')
+        .attr('r', d => d.r)
 
-      }
-      config.scale = s
+    image = raster.attr('transform', `scale(${tiles.scale})translate(${tiles.translate})`)
+      .selectAll('image')
+        .data(tiles, d => d)
+
+    image.exit().remove()
+
+    image.enter()
+      .append('image')
+        .attr('xlink:href', tile_urls[my_tile])
+        .attr('width', 1)
+        .attr('height', 1)
+        .attr('x', d => d[0])
+        .attr('y', d => d[1])
+
+    if (scale != s) {
+      scale = s
       update(config)
     }
   }
