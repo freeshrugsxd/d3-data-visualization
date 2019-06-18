@@ -4,8 +4,8 @@ let map = (function(){
 
     // create configuration template object that holds the settings' default values
     let config_template  = {
-            height : 400,
-             width : 800,
+            height : 500,
+             width : 1000,
             div_id : 'map',        // id of the div container holding the chart
         projection : 'mercator',
               tile : 'dark',
@@ -71,8 +71,4 @@ let map = (function(){
 
 })()
 
-let resize_windows = function(){
-    window.dispatchEvent(new Event('resize'))
-}
-
-window.addEventListener('resize', map.render)
+//window.addEventListener('resize', map.render)

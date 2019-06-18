@@ -6,9 +6,8 @@
   level at which they are shown. These parameters are passed via URL.
 */
 
-
 function draw_map(config) {
-  let divId      = config.div_id,
+  const divId      = config.div_id,
       mapId      = `map_${divId}`,
       divIdSel   = `#${divId}`,
       circClass  = `${mapId}_circle`,
@@ -25,11 +24,12 @@ function draw_map(config) {
 
       pi = Math.PI;
 
+  let scale = 0;
+
   $(divIdSel).html('')
   $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
 
-  console.log(config.data)
-  select = d3.select('#dropdown')
+  const select = d3.select('#dropdown');
 
   for (let prod_type in config.data.product_types) {
     select.append('option')
@@ -43,9 +43,7 @@ function draw_map(config) {
       equirect : d3.geo.equirectangular(),
   };
 
- 
-
-  
+   
   // define tooltip (coords are declared later on mouse events)
   const tooltip = d3.select('body')
     .append('div')
@@ -64,7 +62,7 @@ function draw_map(config) {
 
   // http://bl.ocks.org/jasondavies/0051a06829e72b423ba9
   // determine x index of wrapped tiles east and west of the original map
-  let wrapX = d => (d[0] % (1 << d[2]) + (1 << d[2])) % (1 << d[2])
+  const wrapX = d => (d[0] % (1 << d[2]) + (1 << d[2])) % (1 << d[2]);
 
   const tile_urls = {
     // https://wiki.openstreetmap.org/wiki/Tiles
@@ -74,7 +72,7 @@ function draw_map(config) {
     wiki : d => `https://maps.wikimedia.org/osm-intl/${d[2]}/${wrapX(d)}/${d[1]}.png`,
     bw   : d => `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${wrapX(d)}/${d[1]}.png`,
     meeks: d => `http://a.tiles.mapbox.com/v3/elijahmeeks.map-zm593ocx/${d[2]}/${wrapX(d)}/${d[1]}.png`
-  }
+  };
 
   // convenience function to project any data to the specified projection
   // mercator scale: https://www.wikiwand.com/en/Mercator_projection#/Alternative_expressions
@@ -103,15 +101,16 @@ function draw_map(config) {
 
   let svg = d3.select(divIdSel)
       .append('svg')
-        .attr({ width: width, height: height, class: mapId})
+        .attr("viewBox", "0 0 " + width + " " + height )  
+      //.attr({ width: width, height: height, class: mapId})
         .call(zoom);
 
   let raster = svg.append('g'),  // group for tile images
       vector = svg.append('g');  // group for circles
 
-  let scaleRad = d3.scale.pow()
+  let scaleRad = d3.scale.sqrt()
       .domain([1, 10000])
-      .range([1, 3])
+      .range([1, 7])
   
   // convenience function to calculate the quadtree
   let quadtree = d3.geom.quadtree()
@@ -195,7 +194,6 @@ function draw_map(config) {
     */
       
     let oldLen = 0;
-
     while (true) {
       for (let i in points) {
         p1 = points[i]
@@ -209,12 +207,11 @@ function draw_map(config) {
             if (p2.index != p1.index && p1.a && p2.a) {
               let x = p2.x - p1.x,
                   y = p2.y - p1.y,
-                  l = Math.sqrt(x * x + y * y),
                   a, b;
 
               // check for circle-circle intersection
               // https://www.youtube.com/watch?v=hYDRUES1DSM
-              if (l < (p1.r + p2.r)) {
+              if (Math.sqrt(x * x + y * y) < (p1.r + p2.r)) {
 
                 // figure out which circle is the bigger one (by area)
                 if (p2.a > p1.a) {a = p2, b = p1}
@@ -304,8 +301,8 @@ function draw_map(config) {
         .attr('x', d => d[0])
         .attr('y', d => d[1])
 
-    if (config.scale != s) {
-      config.scale = s
+    if (scale != s) {
+      scale = s
       update(config)
     }
   }
