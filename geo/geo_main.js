@@ -1,10 +1,12 @@
 let map = (function(){
 
-    d3.json('geo/footprint.centroids.geo.json', init)
+    
+    d3.json('geo/tiles_x_countries_x_continents.geo.json', init)
+    // d3.json('geo/footprint.centroids.geo.json', init)
 
     // create configuration template object that holds the settings' default values
     let config_template  = {
-            height : 500,
+            height : 600,
              width : 1000,
             div_id : 'map',        // id of the div container holding the chart
         projection : 'mercator',
@@ -28,12 +30,11 @@ let map = (function(){
     // config_array.push(jQuery.extend(true, {}, config_template))
 
     function init(error, data) {
-
         if (error) throw error;
-
+        console.log(data)
         // add data and specify configuration for each chart
         config_array[0].div_id     = 'map1'
-        config_array[0].data       = data
+        config_array[0].data       = data.countries
         config_array[0].projection = 'mercator'
         config_array[0].opacity    = 0.7
         config_array[0].tile       = 'light'

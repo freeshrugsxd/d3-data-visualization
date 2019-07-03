@@ -29,14 +29,6 @@ function draw_map(config) {
   $(divIdSel).html('')
   $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
 
-  const select = d3.select('#dropdown');
-
-  for (let prod_type in config.data.product_types) {
-    select.append('option')
-      .attr('value', config.data.product_types[prod_type])
-      .text(config.data.product_types[prod_type])
-  }
-
   // projection library:
   const projections = {
       mercator : d3.geo.mercator(),
@@ -101,7 +93,7 @@ function draw_map(config) {
 
   let svg = d3.select(divIdSel)
       .append('svg')
-        .attr("viewBox", "0 0 " + width + " " + height )  
+        .attr('viewBox', `0 0 ${width} ${height}`)  
       //.attr({ width: width, height: height, class: mapId})
         .call(zoom);
 
@@ -109,8 +101,8 @@ function draw_map(config) {
       vector = svg.append('g');  // group for circles
 
   let scaleRad = d3.scale.sqrt()
-      .domain([1, 10000])
-      .range([1, 7])
+      .domain([1, 2e6])
+      .range([1, 60])
   
   // convenience function to calculate the quadtree
   let quadtree = d3.geom.quadtree()
@@ -129,9 +121,9 @@ function draw_map(config) {
     data.map( function(d, i) {
       points[i] = {}
       points[i].index = i
-      points[i].count = 1
+      points[i].count = d.properties.num_products
       
-      points[i].r = scaleRad(d.properties.num_products)  // assign scaled radius
+      points[i].r = scaleRad(d.properties.num_products) * (1 + (scale >> 10) / 10)  // assign scaled radius
 
       // project lat / lon data to x,y values in our projection
       points[i].x = proj(d.geometry.coordinates)[0]
@@ -254,15 +246,15 @@ function draw_map(config) {
         .append('circle')
           .attr('class', circClass)
           .attr({
-            r : d => d.r,
-            cx: d => d.x || -1e9, // off the view port if its on the
-            cy: d => d.y || -1e9, // far side of the globe
+            r : d => d.r ,
+            cx: d => d.x,
+            cy: d => d.y,
             fill: circCol,
             stroke: circStroke,
             opacity : opacity
           })
     circs.on('mousemove', function(d) {
-      tooltip.html(d.count)
+      tooltip.html(d.count > 1000 ? `${parseInt(d.count / 1000)}k` : d.count)
       .style('top',  `${d3.event.pageY + 15}px`)
       .style('left', `${d3.event.pageX + 10}px`)
       .style('pointer-events', 'none')

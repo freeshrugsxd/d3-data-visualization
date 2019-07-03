@@ -52,11 +52,11 @@ let pie_area = (function(){
 
         config_array[3].data         = json.n_prod
         config_array[3].div_class    = 'drill-down-pie-chart-4'
-        config_array[3].headline     = true,
-        config_array[3].labels       = true,
-        config_array[3].legend       = true,
-        config_array[3].fancy_legend = true,
-        config_array[3].label_size   = 13,
+        config_array[3].headline     = true
+        config_array[3].labels       = true
+        config_array[3].legend       = true
+        config_array[3].fancy_legend = true
+        config_array[3].label_size   = 13
         config_array[3].color        = 'nature'
 
         redraw()
@@ -72,9 +72,3 @@ let pie_area = (function(){
     return { render : redraw }
 
 })()
-
-let resize_windows = function(){
-    window.dispatchEvent(new Event('resize'))
-}
-
-window.addEventListener('resize', pie_area.render)

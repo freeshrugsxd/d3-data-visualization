@@ -13,7 +13,6 @@ function draw_pie(config) {
     ttipClass   = `tooltip_${divClass}`, // class name for tooltip div element
 
     arcClassSel    = `.${arcClass}`,     // selector for arc path elements
-    arcGrpClassSel = `.${arcGrpClass}`,  // selector for arc group elements
     buttonClassSel = `.${buttonClass}`,  // selector for up-button circle
     chartClassSel  = `.${divClass}`,     // selector for div container
     labelClassSel  = `.${labelClass}`,   // selector for label group element
@@ -148,12 +147,12 @@ function draw_pie(config) {
   // create svg area
   const svg = d3.selectAll(chartClassSel)
     .append('svg')
-      .attr({id : `${divClass}_svg` , width : w, height : h})
+      .attr({ id : `${divClass}_svg`, viewBox : `0 0 ${w} ${h}` })
     .append('g')
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
   // create circle as backdrop for the chart
-  const background = svg.append('circle')
+  svg.append('circle')
     .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`)
     .attr('r', outerRadius)
     .attr('fill', (d, i) => color(i))
@@ -186,7 +185,7 @@ function draw_pie(config) {
       .attr('d', arc)
       .attr('class', arcClass)
       .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`)
-      .attr('fill', (d, i) => color(i))
+      .attr('fill', (_, i) => color(i))
       .style('stroke', 'white')
       .each(function( ) { this._pointerEvents = false })
       .each(function(d) { this._current = d });
@@ -323,7 +322,7 @@ function draw_pie(config) {
         .remove()
 
       // create heading that displays the current layer's label
-      let heading = svg.append('text')
+      svg.append('text')
         .text(config.heading)
         .attr('class', 'heading')
         .attr('x', () => outerRadius + hDiff)
@@ -355,7 +354,7 @@ function draw_pie(config) {
 
     // determine initial and regular radius of the up-button circle element
     const rad = outerRadius / 7,
-      rInit   = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
+      rInit = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
 
     const btnAttr = {
               r : rInit,
@@ -570,17 +569,18 @@ function draw_pie(config) {
     legend.enter()
       .append('g')
         .attr('class', legendClass)
-        .attr('transform', function(d, i) {
+        .attr('transform', function(_, i) {
           // n is the max number of legend entries that fit in the svg vertically
-          const n = Math.floor( (h - margin.top - margin.bottom) /
-                                (c.rectSize + c.spacing) * c.scaling )
+          const n = Math.floor(
+            (h - margin.top - margin.bottom) / (c.rectSize + c.spacing) * c.scaling
+          )
 
           if (pieData.length < n) {
             // if all rectangles fit into one column, use only one column
             const height = c.rectSize + c.spacing,
-              offset     = height * pieData.length,
-              dx = w - margin.right,
-              dy = (outerRadius - offset / 2) + i * height + c.spacing;
+                  offset = height * pieData.length,
+                      dx = w - margin.right,
+                      dy = (outerRadius - offset / 2) + i * height + c.spacing;
 
             return `translate(${dx}, ${dy})`
           } else {
@@ -611,8 +611,8 @@ function draw_pie(config) {
        width : c.rectSize,
       height : c.rectSize,
        class : rectClass,
-        fill : (d, i) => color(i),
-      stroke : (d, i) => color(i)
+        fill : (_, i) => color(i),
+      stroke : (_, i) => color(i)
     };
 
     legend.append('rect')
@@ -725,7 +725,7 @@ function draw_pie(config) {
           config.history.push(children)
 
           if (showHeading) config.headings.push(this.__data__.data.label)
-          paths.each(function() {this._pointerEvents = false})
+          paths.each( function() { this._pointerEvents = false } )
 
           // hide tooltip and remove its content
           tooltip.html('').style('visibility', 'hidden');
