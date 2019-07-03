@@ -3,18 +3,18 @@ function draw_pie(config) {
   const maxRadius  = config.max_radius,  // max outerRadius
     minRadius      = config.min_radius,  // min outerRadius
 
-    divClass    = config.div_class,      // class name of div container
-    arcClass    = `arc_${divClass}`,     // class name for arc path elements
-    arcGrpClass = `g_${arcClass}`,       // class name for arc group elements
-    buttonClass = `up_btn_${divClass}`,  // class name for up-button circle
-    labelClass  = `label_${divClass}`,   // class name for label group element
-    legendClass = `legend_${divClass}`,  // class name for legend entry group
-    rectClass   = `rect_${divClass}`,    // class name for legend rectangles
-    ttipClass   = `tooltip_${divClass}`, // class name for tooltip div element
+    divId       = config.div_id,      // class name of div container
+    arcClass    = `arc_${divId}`,     // class name for arc path elements
+    arcGrpClass = `g_${arcClass}`,    // class name for arc group elements
+    buttonClass = `up_btn_${divId}`,  // class name for up-button circle
+    labelClass  = `label_${divId}`,   // class name for label group element
+    legendClass = `legend_${divId}`,  // class name for legend entry group
+    rectClass   = `rect_${divId}`,    // class name for legend rectangles
+    ttipClass   = `tooltip_${divId}`, // class name for tooltip div element
 
+    divIdSel       = `#${divId}`,        // selector for div container
     arcClassSel    = `.${arcClass}`,     // selector for arc path elements
     buttonClassSel = `.${buttonClass}`,  // selector for up-button circle
-    chartClassSel  = `.${divClass}`,     // selector for div container
     labelClassSel  = `.${labelClass}`,   // selector for label group element
     legendClassSel = `.${legendClass}`,  // selector for legend entry group
     rectClassSel   = `.${rectClass}`,    // selector for legend rectangles
@@ -29,7 +29,7 @@ function draw_pie(config) {
     maxTxtLen     = config.max_txt_len || null,  // max allowed length of legend text
     labelFontSize = config.label_size  || 12,
 
-    w = $(chartClassSel).width(), // width of div container
+    w = $(divIdSel).width(), // width of div container
     duration = 600;  // duration for main transitions (tweenIn/tweenOut/labels...)
 
   // initial declaration of legend params
@@ -38,7 +38,7 @@ function draw_pie(config) {
     initialLegendFontSize  = 10,  // legend text font size
     initialLegendRectSize  = 15;  // height of legend rectangle
 
-  $(chartClassSel).html('') // delete all content of container
+  $(divIdSel).html('') // delete all content of container
   $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
 
   // store initial legend params inside config
@@ -145,9 +145,9 @@ function draw_pie(config) {
     .outerRadius(outerRadius * 1.05);
 
   // create svg area
-  const svg = d3.selectAll(chartClassSel)
+  const svg = d3.selectAll(divIdSel)
     .append('svg')
-      .attr({ id : `${divClass}_svg`, viewBox : `0 0 ${w} ${h}` })
+      .attr({ id : `${divId}_svg`, viewBox : `0 0 ${w} ${h}` })
     .append('g')
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
@@ -169,6 +169,7 @@ function draw_pie(config) {
   function update(config) {
     // update the chart with the current data (sub)set
     // legend and up button constructor functions are called at the bottom
+    tooltip.html('').style('visibility', 'hidden');
 
     // redeclare starting values for legend parameters
     config.rectSize = initialLegendRectSize
@@ -640,13 +641,6 @@ function draw_pie(config) {
     // let legend entries behave like arcs when hovering and clicking
     legend.selectAll('rect')
       .on('mouseover', function(d) {
-        // show tooltip at cursor position and make it clickthrough
-        tooltip.html(d.data.tooltip)
-          .style('top',  `${d3.event.pageY + 15}px`)  // slightly down
-          .style('left', `${d3.event.pageX - 50}px`)  // slightly to the right
-          .style('pointer-events', 'none')            // make clickthrough
-          .style('visibility', 'visible')             // show tooltip
-
         let key = d.data.label;
         paths.each(function() {
           if (this._pointerEvents) {
@@ -731,12 +725,25 @@ function draw_pie(config) {
           tooltip.html('').style('visibility', 'hidden');
           update(config)
         }
-      });
-
+      })
+      .on('dblclick', function() {
+        // check if we are on root layer
+        if (config.history[config.currentLevel - 1] !== undefined) {
+          config.data    = config.history[--config.currentLevel]
+          config.goingUp = true
+          config.history.pop()  // delete last history breadcrumb
+  
+          paths.each(function() { this._pointerEvents = false })
+  
+          if (showHeading) config.headings.pop()  // delete last heading breadcrumb
+  
+          update(config)
+        }
+      })
   }
 
   update(config)
-
+  
   function tweenIn(d) {
     // interpolate an arc from 0° to it's designated angle
     let i = d3.interpolate({startAngle: 0, endAngle: 0}, d);

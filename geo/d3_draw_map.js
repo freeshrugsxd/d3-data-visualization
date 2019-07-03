@@ -7,13 +7,15 @@
 */
 
 function draw_map(config) {
-  const divId      = config.div_id,
-      mapId      = `map_${divId}`,
-      divIdSel   = `#${divId}`,
-      circClass  = `${mapId}_circle`,
+  const divId  = config.div_id,
+      divIdSel = `#${divId}`,    
+      mapId    = `map_${divId}`,
+      
+      circClass    = `${mapId}_circle`,
       circClassSel = `.${circClass}`,
-      ttipClass   = `tooltip_${mapId}`,    // class name for tooltip div element
-      ttipClassSel   = `.${ttipClass}`,    // selector for tooltip div element
+      
+      ttipClass    = `tooltip_${mapId}`,    // class name for tooltip div element
+      ttipClassSel = `.${ttipClass}`,    // selector for tooltip div element
       
       width      = config.width || $(divIdSel).width(),
       opacity    = config.opacity || 1,
