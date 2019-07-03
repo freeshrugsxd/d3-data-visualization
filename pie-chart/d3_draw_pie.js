@@ -285,21 +285,24 @@ function draw_pie(config) {
       }
     })
     .on('click', function() {
-      // drill down one level
-      // check for child nodes and set them as config.data
-      const children = this.__data__.data[config.inner];
-      if (children) {
-        if (showHeading) config.headings.push(this.__data__.data.label)
+      if (this._pointerEvents) {
+        // drill down one level
+        // check for child nodes and set them as config.data
+        const children = this.__data__.data[config.inner];
+        
+        if (children) {
+          if (showHeading) config.headings.push(this.__data__.data.label)
 
-        config.currentLevel++
-        config.data    = children
-        config.goingUp = false
-        config.history.push(children)
-        paths.each(function() {this._pointerEvents = false})
+          config.currentLevel++
+          config.data    = children
+          config.goingUp = false
+          config.history.push(children)
+          paths.each(function() {this._pointerEvents = false})
 
-        // hide tooltip and remove its content
-        tooltip.html('').style('visibility', 'hidden');
-        update(config)
+          // hide tooltip and remove its content
+          tooltip.html('').style('visibility', 'hidden');
+          update(config)
+        }
       }
     });
 
