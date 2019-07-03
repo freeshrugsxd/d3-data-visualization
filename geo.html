@@ -1,59 +1,100 @@
 <!DOCTYPE html>
 <html>
+<meta charset="utf-8" />
+
+<style>
+.leaflet-cluster-anim .leaflet-marker-icon, .leaflet-cluster-anim .leaflet-marker-shadow {
+-webkit-transition: -webkit-transform 0.2s ease-out, opacity 0.2s ease-in;
+-moz-transition: -moz-transform 0.2s ease-out, opacity 0.2s ease-in;
+-o-transition: -o-transform 0.2s ease-out, opacity 0.2s ease-in;
+transition: transform 0.2s ease-out, opacity 0.2s ease-in;
+}
+
+.marker-cluster-very-small {
+  background-color: rgba(37, 240, 172, 0.6);
+}
+.marker-cluster-very-small div {
+  background-color: rgba(30, 204, 166, 0.6);
+}
+.marker-cluster-small {
+  background-color: rgba(181, 226, 140, 0.6);
+}
+.marker-cluster-small div {
+  background-color: rgba(110, 204, 57, 0.6);
+}
+.marker-cluster-medium {
+  background-color: rgba(241, 211, 87, 0.6);
+}
+.marker-cluster-medium div {
+  background-color: rgba(240, 194, 12, 0.6);
+}
+.marker-cluster-large {
+  background-color: rgba(253, 156, 115, 0.6);
+}
+.marker-cluster-large div {
+  background-color: rgba(241, 128, 23, 0.6);
+}
+.marker-cluster-very-large {
+  background-color: rgba(240, 27, 27, 0.6);
+}
+.marker-cluster-very-large div {
+  background-color: rgba(212, 22, 12, 0.6);
+}
+.marker-cluster {
+  background-clip: padding-box;
+  border-radius: 20px;
+}
+.marker-cluster div {
+  width: 30px;
+  height: 30px;
+  margin-left: 5px;
+  margin-top: 5px;
+
+  text-align: center;
+  border-radius: 15px;
+  font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+}
+.marker-cluster span {
+  line-height: 30px;
+}
+</style>
+
 <head>
-  <meta charset="UTF-8">
+  <title>Footprint Marker Cluster Webmap Test</title>
   <link rel="stylesheet" href="css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.2/leaflet.css" />
+  <link rel="stylesheet" href="css/MarkerCluster.css" />
   <script type="text/javascript" src="libs/jquery-3.3.1.min.js"></script>
   <script type="text/javascript" src="libs/bootstrap.min.js"></script>
-  <script type="text/javascript" src="libs/d3.v3.min.js"></script>
-  <script type="text/javascript" src="libs/tile.js"></script>
-
-  <title>geoJSON map</title>
 </head>
-<body>
 
-<div class="col-md-8 col-md-offset-2 col-xs-10 col-xs-offset-1" style="outline: 2px solid black;">
-  <div class="row">
-    <div class="col-xs-10 col-xs-offset-1 col-md-6 col-md-offset-3">
-      <center>
-        <h1>
-          <a href="time-series.html">&lt</a>
-          geoJSON
-          <a href="pie-chart.html">&gt</a>
-        </h1>
-      </center>
+<body>
+  <div class="col-md-8 col-md-offset-2 col-xs-10 col-xs-offset-1">
+    <div class="row">
+      <div class="col-xs-10 col-xs-offset-1 col-md-6 col-md-offset-3">
+        <center>
+          <h1>
+            <a href="pie-chart.html">&lt</a>
+            geoJSON
+            <a href="pie-chart.html">&gt</a>
+          </h1>
+        </center>
+      </div>
     </div>
-  </div>
-  <div class="row">
-    <div class="col-xs-12">
-      <div class="row"><hr></div>
+    <div class="row">
       <div class="col-xs-12">
-        <center><h3>#1</h3></center>
-        <div id="map1"></div>
+        <div class="row"><hr></div>
+        <div class="col-xs-12">
+          <center><h3>leaflet markercluster test</h3></center>
+          <div id='map' style="width: 100%;"></div>
+        </div>
       </div>
     </div>
-  </div>
-</div> 
-  <!-- <div class="row">
-    <div class="col-xs-12">
-      <div class="row"><hr></div>
-      <div class="col-md-offset-2 col-md-8 col-xs-12">
-        <center><h3>#2</h3></center>
-        <div id="map2"></div>
-      </div>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-xs-12">
-      <div class="row"><hr></div>
-      <div class="col-xs-12">
-        <center><h3>#3</h3></center>
-        <div id="map3"></div>
-      </div>
-    </div>
-  </div> -->
-</div>
-<script src="geo/d3_draw_map.js"></script>
-<script src="geo/geo_main.js"></script>
+  </div> 
+</body>
+<script src="http://cdn.leafletjs.com/leaflet-0.6.2/leaflet.js"></script>    
+<script src="libs/leaflet.markercluster-src.js"></script>
+<script src="geo/tiles_x_countries_x_continents.geo.js"></script>
+<script src="geo/leaflet_draw_map.js"></script> 
 </body>
 </html>
