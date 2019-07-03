@@ -1,0 +1,39 @@
+[{
+    "label": "Sentinel-1",
+    "value": 152393772455940,
+    "tooltip": "Mission: Sentinel-1<br>Size: 152.39 TB<br>Products: 85.75 K<br>2.5% of total",
+    "children": [{
+        "label": "RAW",
+        "value": 35817744890199,
+        "tooltip": "Product: RAW<br>Mission: Sentinel-1<br>Size: 35.82 TB<br>Products: 24.93 K<br>23.5% of Sentinel-1"
+    }, {
+        "label": "GRD",
+        "value": 21699978043475,
+        "tooltip": "Product: GRD<br>Mission: Sentinel-1<br>Size: 21.7 TB<br>Products: 27.67 K<br>14.2% of Sentinel-1"
+    }, {
+        "label": "SLC",
+        "value": 94713585901261,
+        "tooltip": "Product: SLC<br>Mission: Sentinel-1<br>Size: 94.71 TB<br>Products: 22.06 K<br>62.2% of Sentinel-1"
+    }, {
+        "label": "OCN",
+        "value": 162463621005,
+        "tooltip": "Product: OCN<br>Mission: Sentinel-1<br>Size: 162.46 GB<br>Products: 11.09 K<br>0.1% of Sentinel-1"
+    }]
+}, {
+    "label": "Sentinel-2",
+    "value": 5980032063481753,
+    "tooltip": "Mission: Sentinel-2<br>Size: 5.98 PB<br>Products: 11.31 M<br>97.5% of total",
+    "children": [{
+        "label": "Level-1C",
+        "value": 4447890274577971,
+        "tooltip": "Product: Level-1C<br>Mission: Sentinel-2<br>Size: 4.45 PB<br>Products: 8.98 M<br>74.4% of Sentinel-2"
+    }, {
+        "label": "Level-2A",
+        "value": 1419050177409030,
+        "tooltip": "Product: Level-2A<br>Mission: Sentinel-2<br>Size: 1.42 PB<br>Products: 2.15 M<br>23.7% of Sentinel-2"
+    }, {
+        "label": "Level-2Ap",
+        "value": 113091611494752,
+        "tooltip": "Product: Level-2Ap<br>Mission: Sentinel-2<br>Size: 113.09 TB<br>Products: 177.87 K<br>1.9% of Sentinel-2"
+    }]
+}]

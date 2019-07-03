@@ -178,6 +178,7 @@ function draw_pie(config) {
     config.scaling  = initialLegendScaling
 
     pieData = pie(config.data)
+
     let paths = arcs.selectAll(arcClassSel)
       .data(pieData, d => d.data.label)
 
