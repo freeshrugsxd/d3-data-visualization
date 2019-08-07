@@ -1,11 +1,3 @@
-/* We use online map tiles as a background map. This means less computing on the
-  client side and therefore faster loading times and reduced lag on slower or older
-  machines. 
-
-  Tiles are image files that are indexed by their x/y-offset and the zoom
-  level at which they are shown. These parameters are passed via URL.
-*/
-
 function draw_map(config) {
   const divId  = config.div_id,
       divIdSel = `#${divId}`,    
@@ -14,7 +6,7 @@ function draw_map(config) {
       circClass    = `${mapId}_circle`,
       circClassSel = `.${circClass}`,
       
-      ttipClass    = `tooltip_${mapId}`,    // class name for tooltip div element
+      ttipClass    = `tooltip_${mapId}`, // class name for tooltip div element
       ttipClassSel = `.${ttipClass}`,    // selector for tooltip div element
       
       width      = config.width || $(divIdSel).width(),
@@ -29,31 +21,13 @@ function draw_map(config) {
   let scale = 0;
 
   $(divIdSel).html('')
-  $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
 
   // projection library:
   const projections = {
       mercator : d3.geo.mercator(),
       equirect : d3.geo.equirectangular(),
   };
-
    
-  // define tooltip (coords are declared later on mouse events)
-  const tooltip = d3.select('body')
-    .append('div')
-      .attr('class', ttipClass)
-      .style('position', 'absolute')
-      .style('z-index', '20')
-      .style('visibility', 'hidden')
-      .style('font-weight', 'bold')
-      .style('font-size', '10px')
-      .style('color', '#000')
-      .style('line-height', 1)
-      .style('padding', '5px')
-      .style('background', '#fff')
-      .style('border-radius', '2px')
-      .style('opacity', 0.8);
-
   // http://bl.ocks.org/jasondavies/0051a06829e72b423ba9
   // determine x index of wrapped tiles east and west of the original map
   const wrapX = d => (d[0] % (1 << d[2]) + (1 << d[2])) % (1 << d[2]);
@@ -103,7 +77,7 @@ function draw_map(config) {
       vector = svg.append('g');  // group for circles
 
   let scaleRad = d3.scale.sqrt()
-      .domain([1, 2e6])
+      .domain([1, 500000])
       .range([1, 60])
   
   // convenience function to calculate the quadtree
@@ -116,6 +90,23 @@ function draw_map(config) {
   function update(config) {
     // on every update: calculate the clustered markers and draw them as circles onto the map
 
+    $(ttipClassSel).remove()  // remove all leftover tooltips on redraw
+    // define tooltip (coords are declared later on mouse events)
+    const tooltip = d3.select('body')
+      .append('div')
+        .attr('class', ttipClass)
+        .style('position', 'absolute')
+        .style('z-index', '20')
+        .style('visibility', 'hidden')
+        .style('font-weight', 'bold')
+        .style('font-size', '10px')
+        .style('color', '#000')
+        .style('line-height', 1)
+        .style('padding', '5px')
+        .style('background', '#fff')
+        .style('border-radius', '2px')
+        .style('opacity', 0.8);
+  
     let data = config.data.features,
       points = Array(data.length);
 
@@ -173,6 +164,7 @@ function draw_map(config) {
       // if quad is not a leaf, iterate over its children and determine the biggest radius
       for (let i = quad.r = 0; i < 4; ++i) {
         if (quad.nodes[i] && quad.nodes[i].r > quad.r) {
+          // assign largest child radius to quad
           quad.r = quad.nodes[i].r
         }
       }
@@ -195,7 +187,8 @@ function draw_map(config) {
         qtree.visit(function(quad, x0, y0, x1, y1) {
 
           let p2 = quad.point,
-              r  = p1.r + quad.r;
+              r  = p1.r + quad.r
+              rr = r + r;
           
           if (p2) {
             if (p2.index != p1.index && p1.a && p2.a) {
@@ -208,8 +201,14 @@ function draw_map(config) {
               if (Math.sqrt(x * x + y * y) < (p1.r + p2.r)) {
 
                 // figure out which circle is the bigger one (by area)
-                if (p2.a > p1.a) {a = p2, b = p1}
-                else {            a = p1, b = p2}
+                if (p2.a > p1.a) {
+                  a = p2
+                  b = p1
+                } 
+                else {
+                  a = p1
+                  b = p2
+                }
 
                 // calculate new weighted center point of merged circle
                 a.x = (a.x * a.a + b.x * b.a) / (a.a + b.a)
@@ -230,7 +229,7 @@ function draw_map(config) {
             The combined radius r is used as a buffer, since a point can lie near or
             on the boundary of a quadrat.
           */
-          return x0 > p1.x + r || x1 < p1.x - r || y0 > p1.y + r || y1 < p1.y - r
+          return x0 > p1.x + rr || x1 < p1.x - rr || y0 > p1.y + rr || y1 < p1.y - rr
         })
       }
 
@@ -255,6 +254,7 @@ function draw_map(config) {
             stroke: circStroke,
             opacity : opacity
           })
+
     circs.on('mousemove', function(d) {
       tooltip.html(d.count > 1000 ? `${parseInt(d.count / 1000)}k` : d.count)
       .style('top',  `${d3.event.pageY + 15}px`)
@@ -297,6 +297,11 @@ function draw_map(config) {
 
     if (scale != s) {
       scale = s
+
+      // determine which data subset to use based on zoom
+      // initial zoom scale is 1000
+      dataSub = s <= 3000 ? 'continents' : s > 3000 && s < 9000 ? 'countries' : 'footprints'
+      config.data = config.data_obj[dataSub]
       update(config)
     }
   }
