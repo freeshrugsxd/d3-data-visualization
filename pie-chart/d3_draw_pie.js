@@ -184,13 +184,13 @@ function draw_pie(config) {
 
     paths.enter()
       .append('path')
-      .attr('d', arc)
-      .attr('class', arcClass)
-      .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`)
-      .attr('fill', (_, i) => color(i))
-      .style('stroke', 'white')
-      .each(function( ) { this._pointerEvents = false })
-      .each(function(d) { this._current = d });
+        .attr('d', arc)
+        .attr('class', arcClass)
+        .attr('transform', `translate(${outerRadius + hDiff}, ${outerRadius})`)
+        .attr('fill', (_, i) => color(i))
+        .style('stroke', 'white')
+        .each(function( ) { this._pointerEvents = false })
+        .each(function(d) { this._current = d });
 
     paths.transition()
       .duration(duration)
