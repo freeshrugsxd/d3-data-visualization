@@ -1,12 +1,12 @@
 function draw_map(config) {
   const divId = config.div_id,
-    divIdSel = `#${divId}`,
-    mapId = `map_${divId}`,
+    divIdSel  = `#${divId}`,
+    mapId     = `map_${divId}`,
 
-    circClass = `${mapId}_circle`,
+    circClass    = `${mapId}_circle`,
     circClassSel = `.${circClass}`,
 
-    ttipClass = `tooltip_${mapId}`, // class name for tooltip div element
+    ttipClass    = `tooltip_${mapId}`, // class name for tooltip div element
     ttipClassSel = `.${ttipClass}`, // selector for tooltip div element
 
     BBoxAttr = `${divId}-BBox`, // name for the bbox attribute
@@ -33,15 +33,15 @@ function draw_map(config) {
   // http://bl.ocks.org/jasondavies/0051a06829e72b423ba9
   // determine x index of wrapped tiles east and west of the original map
   const wrapX = d => (d[0] % (1 << d[2]) + (1 << d[2])) % (1 << d[2]),
-    rndrange = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
+    rndrange  = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
   const tile_urls = {
     // https://wiki.openstreetmap.org/wiki/Tiles
-    dark: d => `https://cartodb-basemaps-${rndrange(1,4)}.global.ssl.fastly.net/dark_all/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    dark:  d => `https://cartodb-basemaps-${rndrange(1,4)}.global.ssl.fastly.net/dark_all/${d[2]}/${wrapX(d)}/${d[1]}.png`,
     light: d => `https://cartodb-basemaps-${rndrange(1,4)}.global.ssl.fastly.net/light_all/${d[2]}/${wrapX(d)}/${d[1]}.png`,
     ocean: d => `https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/${d[2]}/${d[1]}/${wrapX(d)}.png`,
-    wiki: d => `https://maps.wikimedia.org/osm-intl/${d[2]}/${wrapX(d)}/${d[1]}.png`,
-    bw: d => `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    wiki:  d => `https://maps.wikimedia.org/osm-intl/${d[2]}/${wrapX(d)}/${d[1]}.png`,
+    bw:    d => `https://tiles.wmflabs.org/bw-mapnik/${d[2]}/${wrapX(d)}/${d[1]}.png`,
     meeks: d => `http://a.tiles.mapbox.com/v3/elijahmeeks.map-zm593ocx/${d[2]}/${wrapX(d)}/${d[1]}.png`
   };
 
@@ -72,11 +72,11 @@ function draw_map(config) {
 
   let svg = d3.select(divIdSel)
     .append('svg')
-    .attr('viewBox', `0 0 ${width} ${height}`)
-    .call(zoom);
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .call(zoom);
 
   let raster = svg.append('g'), // group for tile images
-    vector = svg.append('g'); // group for circles
+      vector = svg.append('g'); // group for circles
 
   // this should be tweaked to get the radii right
   let scaleRad = d3.scale.sqrt()
@@ -98,9 +98,9 @@ function draw_map(config) {
       let t = zoom.translate();
 
       config[BBoxAttr] = {
-        left: -t[0],
-        top: -t[1],
-        right: width - t[0],
+        left:   -t[0],
+        top:    -t[1],
+        right:  width  - t[0],
         bottom: height - t[1]
       };
     }
@@ -110,17 +110,19 @@ function draw_map(config) {
     const tooltip = d3.select('body')
       .append('div')
         .attr('class', ttipClass)
-        .style('position', 'absolute')
-        .style('z-index', '20')
-        .style('visibility', 'hidden')
-        .style('font-weight', 'bold')
-        .style('font-size', '10px')
-        .style('color', '#000')
-        .style('line-height', 1)
-        .style('padding', '5px')
-        .style('background', '#fff')
-        .style('border-radius', '2px')
-        .style('opacity', 0.8);
+        .style({
+          position: 'absolute',
+          'z-index': '20',
+          visibility: 'hidden',
+          'font-weight': 'bold',
+          'font-size': '10px',
+          color: '#000',
+          'line-height': 1,
+          padding: '5px',
+          background: '#fff',
+          'border-radius': '2px',
+          opacity: 0.8
+        })
 
     let data = config.data.features,
       points = [];
@@ -128,19 +130,17 @@ function draw_map(config) {
     // populate points array with our data
     data.forEach(function (d) {
 
-      let p = {
+      // get projected pixel coordinates from lat/lon
+      let point = {
         x: proj(d.geometry.coordinates)[0],
         y: proj(d.geometry.coordinates)[1]
       }
 
-      if (within_BBox(p, config[BBoxAttr])) {
-        point = {}
+      if (within_BBox(point, config[BBoxAttr])) {
         point.index = points.length
         point.count = d.properties.num_products
         point.r = scaleRad(d.properties.num_products) // assign scaled radius
-        // project lat / lon data to x,y values in our projection
-        point.x = p.x
-        point.y = p.y
+
         point.a = pi * (point.r * point.r) // calculate the area of the circle
         points.push(point)
       }
@@ -264,29 +264,32 @@ function draw_map(config) {
     let circs = vector.selectAll(circClassSel)
       .data(points)
       .enter()
-      .append('circle')
-      .attr('class', circClass)
-      .attr({
-        r: d => d.r,
-        cx: d => d.x,
-        cy: d => d.y,
-        fill: circCol,
-        stroke: circStroke,
-        opacity: opacity
-      })
+        .append('circle')
+          .attr('class', circClass)
+          .attr({
+            r: d => d.r,
+            cx: d => d.x,
+            cy: d => d.y,
+            fill: circCol,
+            stroke: circStroke,
+            opacity: opacity
+          })
 
     circs.on('mousemove', function (d) {
-        tooltip.html(d.count > 1000 ? `${parseInt(d.count / 1000)}k` : d.count)
-          .style('top', `${d3.event.pageY + 15}px`)
-          .style('left', `${d3.event.pageX + 10}px`)
-          .style('pointer-events', 'none')
-          .style('visibility', 'visible')
+      tooltip.html(d.count > 1000 ? `${parseInt(d.count / 1000)}k` : d.count)
+        .style({
+          top:  `${d3.event.pageY + 15}px`,
+          left: `${d3.event.pageX + 10}px`,
+          'pointer-events': 'none',
+          visibility: 'visible'
+        })
       })
-      .on('mouseout', function (d) {
+      .on('mouseout', function () {
         // hide tooltip and remove its content
         tooltip.html('').style('visibility', 'hidden');
       })
   }
+  
 
   function zoomed() {
     // On zoom: move and scale background tiles and circles appropriately
@@ -295,9 +298,9 @@ function draw_map(config) {
 
     // create new bounding box object for current view
     config[BBoxAttr] = {
-      left: -t[0],
-      top: -t[1],
-      right: width - t[0],
+        left: -t[0],
+         top: -t[1],
+       right: width  - t[0],
       bottom: height - t[1]
     };
 
@@ -315,11 +318,11 @@ function draw_map(config) {
 
     image.enter()
       .append('image')
-      .attr('xlink:href', tile_urls[my_tile])
-      .attr('width', 1)
-      .attr('height', 1)
-      .attr('x', d => d[0])
-      .attr('y', d => d[1])
+        .attr('xlink:href', tile_urls[my_tile])
+        .attr('width', 1)
+        .attr('height', 1)
+        .attr('x', d => d[0])
+        .attr('y', d => d[1])
 
     scale = s
     dataSub = s <= 2000 ? 'continents' : s > 2000 && s < 13000 ? 'countries' : 'footprints'
@@ -328,11 +331,13 @@ function draw_map(config) {
   }
 
   function within_BBox(p, BBox) {
-    let buffer = 0.3,
-       hBuffer = width * buffer,
-       vBuffer = height * buffer;
+    // check if a point lies within a (buffered) bounding box object
+    let buffer  = 0.3;
 
-    return p.x >= BBox.left - hBuffer && p.y >= BBox.top - vBuffer && p.x <= BBox.right + hBuffer && p.y <= BBox.bottom + vBuffer
+    return p.x >= BBox.left   - width  * buffer &&
+           p.x <= BBox.right  + width  * buffer &&
+           p.y >= BBox.top    - height * buffer &&
+           p.y <= BBox.bottom + height * buffer
   }
 
 }

@@ -312,7 +312,7 @@ function draw_pie(config) {
       .transition()
         .duration(duration)
         .attrTween('d', tweenOut)
-      .remove();
+        .remove();
 
     // display headline with name of current layer
     if (showHeading) {
@@ -323,16 +323,17 @@ function draw_pie(config) {
         // set current headline
         config.heading = config.headings[config.currentLevel - 1]
 
-      svg.selectAll('text.heading')
-        .remove()
+      svg.selectAll('text.heading').remove()
 
       // create heading that displays the current layer's label
       svg.append('text')
         .text(config.heading)
-        .attr('class', 'heading')
-        .attr('x', () => outerRadius + hDiff)
-        .attr('y', - margin.top / 2)
-        .attr('text-anchor', 'middle')
+        .attr({
+          x: _ => outerRadius + hDiff,
+          y: - margin.top / 2,
+          class: 'heading',
+          'text-anchor': 'middle'
+        })
         .style('font-size', '18px')
         .style('font-weight', 'bold');
     }
@@ -351,15 +352,14 @@ function draw_pie(config) {
   function updateButton(config, paths) {
 
     // remove old button
-    svg.selectAll(buttonClassSel)
-      .remove()
+    svg.selectAll(buttonClassSel).remove()
 
     const upBtn = svg.append('g')
       .attr('class', buttonClass);
 
     // determine initial and regular radius of the up-button circle element
     const rad = outerRadius / 7,
-      rInit = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
+        rInit = config.currentLevel <= 1 && config.goingUp == false ? 0 : rad;
 
     const btnAttr = {
               r : rInit,
@@ -375,10 +375,12 @@ function draw_pie(config) {
       .text('BACK')
       .attr('transform', `translate(${outerRadius * 1.9 + hDiff}, ${rad / 8})`)
       .attr('text-anchor', 'middle')
-      .style('fill', 'white')
-      .style('font-size', `${rInit / 2}px`)
-      .style('font-weight', 'bold')
-      .style('pointer-events', 'none');
+      .style({
+        'fill': 'white',
+        'font-size': `${rInit / 2}px`,
+        'font-weight': 'bold',
+        'pointer-events': 'none'
+      })
 
     // disable some transitions on root level because they cause
     // problems with the conditional transitions further down
@@ -498,20 +500,21 @@ function draw_pie(config) {
 
     text.enter()
       .append('text')
-      .attr('dy', '.35em')
-      .style('font-size', `${labelFontSize}px`)
-      .style('opacity', 0)
-      .text(d => d.data.label)
-      .attr('transform', function(d) {
-        let xy = outermostArc.centroid(d);
+        .attr('dy', '.35em')
+        .style('font-size', `${labelFontSize}px`)
+        .style('opacity', 0)
+        .text(d => d.data.label)
+        .attr('transform', function(d) {
+          
+          let xy = outermostArc.centroid(d);
 
-        // change x coordinate to move label further to the left or right
-        xy[0] = 1.25 * outerRadius * (midAngle(d) < Math.PI ? 1 : -1);
-        return `translate(${xy})`;
-      })
-      .style('text-anchor', function(d){
-        return midAngle(d) < Math.PI ? 'start' : 'end';
-      })
+          // change x coordinate to move label further to the left or right
+          xy[0] = 1.25 * outerRadius * (midAngle(d) < Math.PI ? 1 : -1);
+          return `translate(${xy})`;
+        })
+        .style('text-anchor', function(d){
+          return midAngle(d) < Math.PI ? 'start' : 'end';
+        })
 
     text.transition()
         .delay(duration)
@@ -522,7 +525,7 @@ function draw_pie(config) {
       .transition()
         .duration(duration)
         .style('opacity', 0)
-      .remove();
+        .remove();
 
     polyline = svg.select(labelClassSel)
       .selectAll('polyline')
@@ -530,17 +533,19 @@ function draw_pie(config) {
 
     polyline.enter()
       .append('polyline')
-      .style('opacity', 0)
-      .style('fill', 'none')
-      .style('stroke', 'black')
-      .style('stroke-width', '2px')
-      .attr('points', function(d) {
-        let xy = outermostArc.centroid(d);
+        .style({
+          opacity: 0,
+          fill: 'none',
+          stroke: 'black',
+          'stroke-width': '2px'
+        })
+        .attr('points', function(d) {
+          let xy = outermostArc.centroid(d);
 
-        // change x coordinate to move label further to the left or right
-        xy[0] = 1.2 * outerRadius * (midAngle(d) < Math.PI ? 1 : -1)
-        return [outerArc.centroid(d), outermostArc.centroid(d), xy];
-      })
+          // change x coordinate to move label further to the left or right
+          xy[0] = 1.2 * outerRadius * (midAngle(d) < Math.PI ? 1 : -1)
+          return [outerArc.centroid(d), outermostArc.centroid(d), xy];
+        })
 
     polyline.transition()
       .delay(duration)
@@ -551,7 +556,7 @@ function draw_pie(config) {
       .transition()
         .duration(duration)
         .style('opacity', 0)
-      .remove();
+        .remove();
   }
 
 
@@ -611,23 +616,20 @@ function draw_pie(config) {
           }
       });
 
-    // legend rectangle attributes
-    const legendAttrs = {
-       width : c.rectSize,
-      height : c.rectSize,
-       class : rectClass,
-        fill : (_, i) => color(i),
-      stroke : (_, i) => color(i)
-    };
-
     legend.append('rect')
-      .attr(legendAttrs)
+      .attr({
+        width:  c.rectSize,
+        height: c.rectSize,
+        class:  rectClass,
+        fill:   (_, i) => color(i),
+        stroke: (_, i) => color(i)
+      })
 
     // add legend entry labels
     legendText = legend.append('text')
-      .attr('x', legendAttrs.width + c.spacing)
-      .attr('y', `${legendAttrs.height / 2 + c.fontSize / 3}px`)
-      .style('font-size', () => `${c.fontSize}px`)
+      .attr('x', c.rectSize + c.spacing)
+      .attr('y', `${c.rectSize / 2 + c.fontSize / 3}px`)
+      .style('font-size', _ => `${c.fontSize}px`)
       .style('font-weight', 'bold')
       .text(d => text_truncate(d.data.label, maxTxtLen)) // truncate long strings
 
@@ -662,10 +664,12 @@ function draw_pie(config) {
       .on('mousemove', function(d){
         // show tooltip at cursor position and make it clickthrough
         tooltip.html(d.data.tooltip)
-          .style('top',  `${d3.event.pageY + 15}px`)  // slightly down
-          .style('left', `${d3.event.pageX + 10}px`)  // slightly to the right
-          .style('pointer-events', 'none')
-          .style('visibility', 'visible')
+          .style({
+            'top':  `${d3.event.pageY + 15}px`, // slightly down
+            'left': `${d3.event.pageX + 10}px`, // slightly to the right
+            'pointer-events': 'none',
+            'visibility': 'visible'
+          })
       })
       .on('mouseout', function() {
         paths.each(function() {
