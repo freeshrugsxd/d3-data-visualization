@@ -6,7 +6,10 @@ function draw_map(config) {
     circClass    = `${mapId}_circle`,
     circClassSel = `.${circClass}`,
 
-    ttipClass    = `tooltip_${mapId}`, // class name for tooltip div element
+    infoClass = `${mapId}_infoBox`,
+    infoClassSel = `.${infoClass}`,
+
+    ttipClass    = `tooltip_${divId}`, // class name for tooltip div element
     ttipClassSel = `.${ttipClass}`, // selector for tooltip div element
 
     BBoxAttr = `${divId}-BBox`, // name for the bbox attribute
@@ -73,15 +76,37 @@ function draw_map(config) {
   let svg = d3.select(divIdSel)
     .append('svg')
       .attr('viewBox', `0 0 ${width} ${height}`)
-      .call(zoom);
+      .style('outline', 'gray solid 1px')
+      .call(zoom)
 
-  let raster = svg.append('g'), // group for tile images
-      vector = svg.append('g'); // group for circles
+  // svg groups in the order in which they are drawn
+  let raster = svg.append('g'), // tile images
+      vector = svg.append('g'), // circles
+      info   = svg.append('g'); // info box
+
+  // info box to show cursor coordinates
+  info.append('rect')
+    .attr({
+      width: 150,
+      height: 16,
+      fill: 'white'
+    })
+    .style('opacity', 0)
+
+  let infoText = info.append('text')
+    .attr('transform', 'translate(5,12)')
+    .attr('cursor', 'default')
+
+  svg.on('mouseout', function () {
+    infoText.text('')
+    info.selectAll('rect')
+      .style('opacity', 0)
+  })
 
   // this should be tweaked to get the radii right
   let scaleRad = d3.scale.sqrt()
-    .domain([1, 100000])
-    .range([3, 25])
+    .domain([50, 50000])
+    .range([2.2, 15])
 
   // convenience function to calculate the quadtree
   let quadtree = d3.geom.quadtree()
@@ -92,10 +117,10 @@ function draw_map(config) {
 
   function update(config) {
     // on every update: calculate the clustered markers and draw them as circles onto the map
+  let t = zoom.translate();
 
-    if (scale == 0) {
+  if (scale == 0) {
       // create initial bounding box object
-      let t = zoom.translate();
 
       config[BBoxAttr] = {
         left:   -t[0],
@@ -106,23 +131,44 @@ function draw_map(config) {
     }
 
     $(ttipClassSel).remove() // remove all leftover tooltips on redraw
+
     // define tooltip (coords are declared later on mouse events)
     const tooltip = d3.select('body')
       .append('div')
         .attr('class', ttipClass)
         .style({
-          position: 'absolute',
+          'position': 'absolute',
           'z-index': '20',
-          visibility: 'hidden',
+          'visibility': 'hidden',
           'font-weight': 'bold',
           'font-size': '10px',
-          color: '#000',
+          'color': '#000',
           'line-height': 1,
-          padding: '5px',
-          background: '#fff',
+          'padding': '5px',
+          'background': '#fff',
           'border-radius': '2px',
-          opacity: 0.8
+          'opacity': 0.8
         })
+
+    // display cursor position in info box
+    svg.on('mousemove', function () {
+      mx = d3.mouse(this)[0]
+      my = d3.mouse(this)[1]
+
+      // re-project px to coords
+      ll = proj.invert([mx - t[0], my - t[1]])
+
+      lon = `${Math.abs(Math.round(ll[0] * 1000) / 1000)}${ll[0] > 0 ? '°E' : '°W'}`
+      lat = `${Math.abs(Math.round(ll[1] * 1000) / 1000)}${ll[1] > 0 ? '°N' : '°S'}`
+
+      if (Number(lon.split('°')[0]) <= 180) {
+        info.selectAll('rect')
+        .style('opacity', 0.4)
+
+        infoText.text(`${lat}, ${lon}`)
+      }
+    })
+
 
     let data = config.data.features,
       points = [];
@@ -146,34 +192,40 @@ function draw_map(config) {
       }
     })
 
-    /* The following algorithm is used to find and assign the maximum circle radii for 
-      every node in the quadtree. Only leaf nodes have a point object attached, 
-      which holds the radius for the corresponding point. Our goal is to find the 
-      maximum radius of all circles inside a node and all of its child nodes.
-      To do this, we first store all the nodes in an array and then start to work our
-      way through the nodes in Post-Order (https://www.geeksforgeeks.org/tree-traversals-inorder-preorder-and-postorder/)
-      and hand the radius of the leaf nodes upwards to their parent nodes. Since the array
-      consists of references to the original objects inside the node, all modifications
-      made to them will be present in the original node. (variable: qtree)
+    /* 
+    The following algorithm is used to find and assign the maximum circle radii
+    for every node in the quadtree. Only leaf nodes have a point object
+    attached, which holds the radius for the corresponding point. Our goal is to
+    find the maximum radius of all circles inside a node and all of its child
+    nodes. To do this, we first store all the nodes in an array and then start
+    to work our way through the nodes in Post-Order and hand the radius of the
+    leaf nodes upwards to their parent nodes. Since the array consists of
+    references to the original objects inside the node, all modifications made
+    to them will be present in the original node. (variable: qtree)
+    (https://www.geeksforgeeks.org/tree-traversals-inorder-preorder-and-postorder/)
     */
 
-    qtree = quadtree(points) // calculate quadtree
+    let qtree = quadtree(points), // calculate quadtree
+        next  = [];
 
-    let next = [];
     // traverse the quadtree in Pre-Order and push all nodes into an array
     qtree.visit(function (quad) {
       next.push(quad)
     })
 
-    /* Since d3v3 does not have a visitAfter()-method, like more recent versions do,
-      (https://github.com/d3/d3-quadtree/blob/master/src/visitAfter.js) which traverses 
-      the quadtree in post-order, we have to implement one ourselves. I am basically just
-      taking the last element of the array, while there still is one, and check if it is
-      a leaf node. If so, take the point's radius and assign it to its parent node.
-      If it's not a leaf node, check it for child nodes, take the biggest of their radii 
-      and assign it to the current node. Every node can only have up to four (4) child 
-      nodes (topleft, topright, bottomleft, bottomright).
+    /*
+    Since d3v3 does not have a visitAfter()-method, like more recent versions
+    do, (https://github.com/d3/d3-quadtree/blob/master/src/visitAfter.js) which
+    traverses the quadtree in post-order, we have to implement one ourselves. I
+    am basically just taking the last element of the array, while there still is
+    one, and check if it is a leaf node. If so, take the point's radius and
+    assign it to its parent node. If it's not a leaf node, check it for child
+    nodes, take the biggest of their radii and assign it to the current node.
+    Every node can only have up to four (4) child nodes (topleft, topright,
+    bottomleft, bottomright).
     */
+
+    let quad;
 
     // take last item of the array and check if its a leaf
     while (quad = next.pop()) {
@@ -182,7 +234,9 @@ function draw_map(config) {
         quad.r = quad.point.r
         continue
       }
-      // if quad is not a leaf, iterate over its children and determine the biggest radius
+
+      // if quad is not a leaf, iterate over its children and determine the
+      // biggest radius
       for (let i = quad.r = 0; i < 4; ++i) {
         if (quad.nodes[i] && quad.nodes[i].r > quad.r) {
           // assign largest child radius to quad
@@ -191,19 +245,22 @@ function draw_map(config) {
       }
     }
 
-    /* The following algorithm implements the clustering of circles that are intersecting.
-      Parts of the code are generously borrowed from and/or hugely inspired by Andrew Reid's
-      excellent Marker Clustering example (https://bl.ocks.org/Andrew-Reid/21ff4b57267fa91dacc57ef1ccb7afb3)
-      and his d3-fuse library (https://github.com/Andrew-Reid/d3-fuse).
-      For every point in our data, visit each node in the quadtree and check if the point lies
-      within or within one radius distance of the quadrat. If this is not the case, that node's
-      child nodes will not be visited. (https://github.com/d3/d3-3.x-api-reference/blob/master/Quadtree-Geom.md#visit)
+    /*
+    The following algorithm implements the clustering of circles that are
+    intersecting. Parts of the code are generously borrowed from and/or hugely
+    inspired by Andrew Reid's excellent Marker Clustering example
+    (https://bl.ocks.org/Andrew-Reid/21ff4b57267fa91dacc57ef1ccb7afb3) and his
+    d3-fuse library (https://github.com/Andrew-Reid/d3-fuse). For every point in
+    our data, visit each node in the quadtree and check if the point lies within
+    or within one radius distance of the quadrat. If this is not the case, that
+    node's child nodes will not be visited.
+    (https://github.com/d3/d3-3.x-api-reference/blob/master/Quadtree-Geom.md#visit)
     */
 
     let oldLen = 0;
     while (true) {
       for (let i in points) {
-        p1 = points[i]
+        let p1 = points[i]
         // visit each node in the quadtree
         qtree.visit(function (quad, x0, y0, x1, y1) {
 
@@ -213,13 +270,12 @@ function draw_map(config) {
 
           if (p2) {
             if (p2.index != p1.index && p1.a && p2.a) {
-              let x = p2.x - p1.x,
-                y = p2.y - p1.y,
-                a, b;
+              let a, b,
+                x = p2.x - p1.x,
+                y = p2.y - p1.y;               
 
               // check for circle-circle intersection
-              // https://www.youtube.com/watch?v=hYDRUES1DSM
-              if (Math.sqrt(x * x + y * y) < (p1.r + p2.r)) {
+              if (Math.sqrt(x * x + y * y) <= (p1.r + p2.r)) {
 
                 // figure out which circle is the bigger one (by area)
                 if (p2.a > p1.a) {
@@ -244,10 +300,11 @@ function draw_map(config) {
               }
             }
           }
-          /* Check if circle lies outside of the quad's bounding box.
-            If this returns true, child nodes of the quad are not going to be visited.
-            The combined radius r is used as a buffer, since a point can lie near or
-            on the boundary of a quadrat.
+          /*
+          Check if circle lies outside of the quad's bounding box. If this
+          returns true, child nodes of the quad are not going to be visited. The
+          combined radius r is used as a buffer, since a point can lie near or
+          on the boundary of a quadrat.
           */
           return x0 > p1.x + rr || x1 < p1.x - rr || y0 > p1.y + rr || y1 < p1.y - rr
         })
@@ -324,15 +381,16 @@ function draw_map(config) {
         .attr('x', d => d[0])
         .attr('y', d => d[1])
 
+
     scale = s
-    dataSub = s <= 2000 ? 'continents' : s > 2000 && s < 13000 ? 'countries' : 'footprints'
+    dataSub = s <= 2000 ? 'continents' : s > 2000 && s < 11000 ? 'countries' : 'footprints'
     config.data = config.data_obj[dataSub]
     update(config)
   }
 
   function within_BBox(p, BBox) {
     // check if a point lies within a (buffered) bounding box object
-    let buffer  = 0.3;
+    let buffer  = 0.1;
 
     return p.x >= BBox.left   - width  * buffer &&
            p.x <= BBox.right  + width  * buffer &&
